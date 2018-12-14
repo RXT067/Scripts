@@ -1,0 +1,49 @@
+>=app-admin/calamares-3.1.9 python_targets_python3_5
+app-editors/liteide gdb
+=dev-db/sqlitebrowser-3.8.0 -qt4
+>=dev-libs/boost-1.63.0 python_targets_python3_5
+>=dev-java/swing-layout-1.0.4 source
+>=dev-java/junit-4.12-r1 source
+>=dev-java/oracle-jdk-bin-1.8.0.112 javafx
+dev-libs/xmlsec nss
+dev-lang/php truetype gd
+dev-qt/qt-creator designer
+net-analyzer/nmap zenmap
+net-dns/bind dlz geoip json ldap mysql urandom -threads
+net-dns/bind-tools urandom
+sys-devel/gcc go gcj graphite
+sys-devel/base-gcc go gcj graphite
+
+#python 3.5 directive
+>=app-editors/vim-7 python_targets_python3_5 -python_targets_python3_4
+>=dev-libs/botan-2.3 boost
+>=dev-libs/gobject-introspection-1.50 python_targets_python3_5
+dev-python/PyQt5 bluetooth declarative designer gui multimedia network positioning printsupport sensors sql webchannel webengine webkit websockets x11extras xmlpatterns widgets
+
+# libpcre with pcre16 apparently needed
+>=dev-libs/libpcre2-10.30 pcre16
+
+# w3m with imlib
+>=www-client/w3m-0.5.3_p20180125 imlib
+
+# util-linux with tty helpers, these are the best
+sys-apps/util-linux tty-helpers
+
+# virtual/jpeg requires static-libs
+>=virtual/jpeg-0-r2:0 static-libs
+
+# nfs / rpcbind
+net-nds/rpcbind warmstarts
+
+# unmasked arduino SDK related
+>=dev-util/astyle-3.1-r2 java
+
+# RPM new USE flag
+app-arch/rpm PYTHON_SINGLE_TARGET: python2_7 -python3_5 -python3_6
+
+# asciidoc new USE flag
+app-text/asciidoc PYTHON_SINGLE_TARGET: python2_7
+
+# GCC 7.x hardened
+>=sys-devel/gcc-7.3.0 hardened
+>=sys-devel/base-gcc-7.3.0 hardened
