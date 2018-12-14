@@ -1,5 +1,5 @@
 #!/bin/bash
-# Krey's Portage reconfiguraTHOR. (KPRC)
+# Krey's Portage ReConfiguraTHOR. (KPRC)
 # Inspired by Ghiunhan Mamut's Vasile andRogentos Team Avasile
 # LICENSE: WORK IN PROGRESS CUSTOM UNNAMED LICENCE, VERSION <UNDEFINED>
 
@@ -18,6 +18,7 @@ CALLME="\e[1;32mKAVASILE:\e[0m"
 # DEPENDACIES
 KAVASILE_DEPENDANCIES () {
 	echo "no deps required atm"
+	#TODO: su, cp, mv, ls, emerge
 }
 
 
@@ -113,16 +114,8 @@ KAVASILE_INSTALL () {
 		fi
 
 
-		
-	if [[ ! -x /etc/.ArgentSources ]] && [[ -x "$(command -v emerge)" ]]; then
-		echo -e "$CALLME Install failed, Download .ArgentSources to /etc/.ArgentSources from https://github.com/RXT067/Argent/tree/master/.ArgentSources manually."
-		#echo -e "$CALLME Downloading .ArgentSources, because it is not present."
-		#TODO: Download specific folder from git wget -directory-prefix=/etc/.ArgentSources https://github.com/RXT067/Argent/tree/master/.ArgentSources
-		#TODO: what user made /etc/.ArgentSources for something?
+	# TODO: Download stuff from avasile --developer-mode to be used.
 
-		else
-			echo -e "$CALLME /etc/.ArgentSources is detected, using it to download preferences for /etc/portage."
-	fi
 
 }
 
@@ -130,52 +123,30 @@ KAVASILE_INSTALL () {
 
 
 
-KAVASILE_USER_MODE () {
-	if [[ -x /etc/.ArgentSources/user.mode ]] && [[ -x "$(command -v emerge)" ]]; then
-		echo -e "$CALLME Symlinking user.mode to /etc/portage."
-		ln -sf /etc/.ArgentSources/user.mode/ /etc/portage
+KAVASILE_ARGENT_MODE () {
+	#TODO: Make it grab from Argent's repo.
+	if [[ -x /etc/KPRC/argent.mode ]] && [[ -x "$(command -v emerge)" ]]; then
+		echo -e "$CALLME Symlinking argent.mode to /etc/portage."
+		ln -sf /etc/KRPC/argent.mode/ /etc/portage
 	fi
 }
 
-
-
-
-
-KAVASILE_HYBRID_MODE () {
-	if [[ -x /etc/.ArgentSources/hybrid.mode ]] && [[ -x "$(command -v emerge)" ]]; then
-		echo -e "$CALLME Symlinking hybrid.mode to /etc/portage."
-		ln -sf /etc/.ArgentSources/hybrid.mode/ /etc/portage
-	fi
-}
-
-
-
-
-
-KAVASILE_SOURCE_MODE () {
-	if [[ -x /etc/.ArgentSources/source.mode ]] && [[ -x "$(command -v emerge)" ]]; then
-		echo -e "$CALLME Symlinking source.mode to /etc/portage."
-		ln -sf /etc/.ArgentSources/source.mode/ /etc/portage
-	fi
-}
 
 
 
 
 KAVASILE_CUSTOM_MODE () {
-	if [[ -x /etc/.ArgentSources/custom.mode ]] && [[ -x "$(command -v emerge)" ]]; then
+	#TODO:
+	if [[ -x /etc/KPRC/custom.mode ]] && [[ -x "$(command -v emerge)" ]]; then
 		echo -e "$CALLME Symlinking custom.mode to /etc/portage."
-		ln -sf /etc/.ArgentSources/custom.mode/ /etc/portage
+		ln -sf /etc/KRPC/custom.mode/ /etc/portage
+
+		elif [[ ! -x /etc/KPRC/custom.mode ]] && [[ -x "$(command -v emerge)" ]]; then
+			echo -e "$CALLME Unable to symlink since directory /etc/KPRC/custom.mode is not present."
+			exit 1
 	fi
 }
 
-
-
-
-KAVASILE_RESET_MODE () {
-	#TODO: If user wants to reset mode to original /etc/portage.
-	echo "TODO"
-}
 
 
 
@@ -199,22 +170,10 @@ KAVASILE_HELP () {
 
 #CASES
 case $1 in
-	--user )
-		KAVASILE_CHECKROOT
-		KAVASILE_INSTALL
-		KAVASILE_USER_MODE
-		;;
-
-	--hybrid )
+	--argent )
 		KAVASILE_CHECKROOT
 		KAVASILE_INSTALL
 		KAVASILE_HYBRID_MODE
-		;;
-
-	--source )
-		KAVASILE_CHECKROOT
-		KAVASILE_INSTALL
-		KAVASILE_SOURCE_MODE
 		;;
 
 	--custom )
