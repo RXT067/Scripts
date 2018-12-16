@@ -4,6 +4,8 @@
 # Made by github.com/kreyren
 # LICENCE: GNUv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
+# TODO: Automatic grub detection
+
 CALLME=KUKUS
 
 # CHECK ROOT
