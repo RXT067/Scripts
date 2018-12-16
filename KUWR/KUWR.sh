@@ -4,7 +4,8 @@
 
 # Abstract: Provide all relevant info in one command with style to help with diagnosting wine.
 
-#TODO: Add other distros
+# TODO: Add other distros
+# TODO: Add DXVK version
 
 if [[ -x "$(command -v wine)" ]]; then
 
@@ -42,6 +43,11 @@ if [[ -x "$(command -v wine)" ]]; then
 		EMERGE --INFO:
 		"
 		emerge --info
+
+		echo "
+		GCC VERSION:
+		"
+		gcc --version
 	fi
 
 	else
