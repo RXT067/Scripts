@@ -4,6 +4,8 @@
 # Made by github.com/kreyren
 # LICENCE: GNUv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
+# TODO: Automatic grub detection
+
 CALLME=KUKUS
 
 # CHECK ROOT
@@ -34,21 +36,20 @@ CALLME=KUKUS
 				echo "FATAL_ERROR: Directory '/boot' is not detected."
 		fi
 
-		cd /usr/src/linux #TODO: if /usr/src/linux is not present?
 
 		if [[ -x "$(command -v make)" ]]; then
-			make && make modules_install && make install
+			su -c "cd /usr/src/linux && make && make modules_install && make install" #TODO: if /usr/src/linux is not present?
 
 			else
 				echo "FATAL_ERROR: Command 'make' is not present."
 				exit 1
 		fi
 
-		grub-install --force /dev/sda #TODO: Needs to be set based on system.
+		su -c "grub-install --force /dev/sda" #TODO: Needs to be set based on system.
 
 
 		if [[ -x "$(command -v grub-mkconfig)" ]]; then
-			grub-mkconfig -o /boot/grub/grub.cfg
+			su -c "grub-mkconfig -o /boot/grub/grub.cfg"
 
 			else
 				echo "FATAL_ERROR: Command 'grub-mkconfig' is not present."
