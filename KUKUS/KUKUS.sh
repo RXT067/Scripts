@@ -57,5 +57,4 @@ CALLME=KUKUS
 		else
 			echo "FATAL_ERROR: Directory '/usr/src/linux' is not detected."
 	fi
-
 	#TODO: Remove old boot?
