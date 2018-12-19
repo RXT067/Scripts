@@ -2,23 +2,23 @@
 # Author: Kreyren @ github.com/kreyren
 # License: Do what the hug you want i don't give a butterfly
 
-# DEFINE GAME_PATH
-GAME_PATH () {
-if [[ -x /home/$USER/.wine-64/drive_c/Program\ Files\ \(x86\)/Steam/steamapp/common/Dishonored2/Dishonored2.exe ]]; then
-	GAME_PATH="/home/$USER/.wine-64/drive_c/Program\ Files\ \(x86\)/Steam/steamapp/common/Dishonored2/"
+# DEFINE GAMEDIR
+GAMEDIR () {
+if [[ -e /home/$USER/.wine-64/drive_c/Program\ Files\ \(x86\)/Steam/steamapps/common/Dishonored2/Dishonored2.exe ]]; then
+	GAMEDIR="/home/$USER/.wine-64/drive_c/Program\ Files\ \(x86\)/Steam/steamapps/common/Dishonored2"
 	
 	elif [[ -x /home/$USER/.wine-32/drive_c/Program\ Files/Steam/steamapp/common/Dishonored2/Dishonored2.exe ]]; then
-		GAME_PATH="/home/$USER/.wine-64/drive_c/Program\ Files\ \(x86\)/Steam/steamapp/common/Dishonored2/"
+		GAMEDIR="/home/$USER/.wine-64/drive_c/Program\ Files\ \(x86\)/Steam/steamapps/common/Dishonored2"
 
 	elif [[ -x /home/$USER/.wine/drive_c/Program\ Files/Steam/steamapp/common/Dishonored2/Dishonored2.exe ]]; then
-		GAME_PATH="/home/$USER/.wine/drive_c/Program\ Files/Steam/steamapp/common/Dishonored2/"
+		GAMEDIR="/home/$USER/.wine/drive_c/Program\ Files/Steam/steamapps/common/Dishonored2"
 
 	elif [[ -x /home/$USER/.wine/drive_c/Program\ Files\(x86\)/Steam/steamapp/common/Dishonored2/Dishonored2.exe ]]; then
-		GAME_PATH="/home/$USER/.wine/drive_c/Program\ Files\(x86\)/Steam/steamapp/common/Dishonored2/"
+		GAMEDIR="/home/$USER/.wine/drive_c/Program\ Files\(x86\)/Steam/steamapps/common/Dishonored2"
 
 	else 
-		echo "ERROR: Dishonored2.exe directory not found, specify:."
-		read GAME_PATH
+		echo "ERROR: Dishonored2.exe directory not found, specify:"
+		read GAMEDIR
 fi
 }
 
@@ -26,19 +26,20 @@ fi
 
 # Disable intro
 disable_intro () {
-if [[ -x $GAME_PATH/base/video/00_introduction.bk2 ]]; then
-	mv $GAME_PATH/base/video/00_introduction.bk2 $GAME_PATH/base/video/00_introduction.bk2.RSAID2
+if [[ -e $GAMEDIR/base/video/00_introduction.bk2 ]]; then
+	mv $GAMEDIR/base/video/00_introduction.bk2 $GAMEDIR/base/video/00_introduction.bk2.RSAID2
 	echo "STATUS: Intro was deactivated by RSAID2."
 
 	else
 		echo "FATAL_ERROR: 00_introduction.bk2 was not found."
+		echo "DEBUG: $GAMEDIR/base/video/00_introduction.bk2"
 fi
 }
 
 # Enable intro
 enable_intro () {
-if [[ -x $GAME_PATH/base/video/00_introduction.bk2.RSAID2 ]]; then
-	mv $GAME_PATH/base/video/00_introduction.bk2.RSAID2 $GAME_PATH/base/video/00_introduction.bk2
+if [[ -e $GAMEDIR/base/video/00_introduction.bk2.RSAID2 ]]; then
+	mv $GAMEDIR/base/video/00_introduction.bk2.RSAID2 $GAMEDIR/base/video/00_introduction.bk2
 	echo "STATUS: Intro was activated by RSAID2."
 
 	else
@@ -48,18 +49,18 @@ fi
 
 case $1 in
 	--enable)
-	GAME_PATH
+	GAMEDIR
 	enable_intro
 	;;
 
 	--disable)
-	GAME_PATH
+	GAMEDIR
 	disable_intro
 	;;
 
 	--help)
 	echo "This script it meant to deactivate introduction in Dishonored 2 on Unix."
-	echo "It tries to detect game and renames video(s) it if present."
+	echo "It tries to detect game and renames video(s) if present."
 	echo "Use --enable to enable introduction."
 	echo "Use --disable to disable introduction."
 	;;
