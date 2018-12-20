@@ -14,3 +14,4 @@ Abstract: Enhancement of "wine" command with focus on debug + Generates a markdo
 ### Contributors
 
 - kreyren @ github.com/kreyren
+- rautamiekka @ github.com/rautamiekka
