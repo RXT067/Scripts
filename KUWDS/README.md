@@ -2,7 +2,7 @@
 
 Version: CONCEPT, usage not recommended
 
-Abstract: Enhancement of "wine" command used for debugging + Generates a markdown document with all **usefull** informations used for debug
+Abstract: Enhancement of "wine" command with focus on debug + Generates a markdown document with all **usefull** informations.
 
 ### Ethical Codex
 1. Make the code clean
