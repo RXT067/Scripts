@@ -4,10 +4,9 @@
 # Made by github.com/kreyren
 # LICENCE: GNUv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-# TODO: Automatic grub detection
-
 CALLME=KUKUS
 
+checkroot () {
 # CHECK ROOT
 	if [[ $UID == 0 ]]; then
 		echo "something" 2&> /dev/null
@@ -16,16 +15,19 @@ CALLME=KUKUS
 		elif [[ -x "$(command -v sudo)" ]]; then
 			echo -e "\e[1;32m$CALLME:\e[0m Failed to aquire root permission, trying using sudo."
 			sudo $0 "$@"
+			exit 1
 
 		#TODO: Add sudo alternatives
 
 		elif [[ ! -x "$(command -v sudo)" ]]; then
 			echo -e "\e[1;32m$CALLME:\e[0m Failed to aquire root permission, trying using su."
 			su -c "$0 $@"
-
+			exit 1
 	fi
+}
 
 # UPDATE KERNEL
+update-kernel () {
 	## GENTOO
 	if [[ -x "$(command -v emerge)" ]] && [[ -x /usr/src/linux ]]; then #TODO: Detect gentoo better for LFS scenario with portage
 		if [[ -x /boot ]]; then
@@ -58,4 +60,14 @@ CALLME=KUKUS
 		else
 			echo "FATAL_ERROR: Directory '/usr/src/linux' is not detected."
 	fi
+
+echo -e "\e[1;32m$CALLME:\e[0m Updating kernel is finished."
+exit 1
+}
 	#TODO: Remove old boot?
+case $1 in 
+	*)
+	checkroot $@
+	update-kernel
+	;;
+esac
