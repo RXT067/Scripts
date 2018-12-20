@@ -1,138 +1,132 @@
+#!/usr/bin/env bash
 # Krey's Universal Wine Game Debugging Script (KUWDS)
 # Licence: GNUv2
-# Author: kreyren @ github.com/kreyren
+# Author: kreyren @ github.com/kreyren, rautamiekka @ github.com/rautamiekka
 # Version: 0.0 - Concept, use on your own risk
 # Abstract: Enhancement of "wine" command used for debugging + Generates a markdown document with all **usefull** informations used for debugging.
 
 # TODO: Output content of markdown on pastebin with markdown formatting
 
-#### DEPENDANCIES
-# SUDO (TEMP) - TODO: Make sudo independant
+# Disable echoing from commands other than echo itself.
+stty -echo
+
+#### DEPENDENCIES
+# SUDO (TEMP)
 if [[ ! -x $(command -v sudo) ]]; then
-	echo "FATAL: This script is currently dependant on sudo, which wasn't detected on your system."
+	echo "FATAL: This script is currently dependent on sudo, which wasn't detected on your system."
 	exit 1
 fi
 
 # WINE
 if [[ ! -x $(command -v wine) ]]; then
-	echo "FATAL: This script is dependant of wine, which is not present on your system."
+	echo "FATAL: This script is dependent of wine, which is not present on your system."
 	echo "DEBUG: This is output of 'command -v wine': $(command -v wine)"
 fi
 
 # TODO: mkdir,cp,mv,date,chmod, lshw, screenfetch - not important atm, will be focused after release.
 
-
-
-
 #### VARs
-DATE="$(date '+%d%m%y-%H%M%S' )"
-
-
-
+DATE="$(date '+%d%m%y-%H%M%S')"
 
 #### GAMEDIR
-make-gamedir () {
-	echo "Speficy game directory:"
-	read $GAMEDIR
+make_gamedir () {
+	# Keep asking for a valid path.
+	while [[ -z "$GAMEDIR" ]]; do
+		read -r -p 'Specify full Wine prefix with a trailing backslash: '
 
-	if [[ GAMEDIR != */.wine*/* ]]; then
-		echo "WARN: This does NOT look like wine prefix."
-	fi
+		if [[ "$GAMEDIR" =~ .*/\.wine.*/.* ]]; then
+			echo "WARN: This does NOT look like Wine prefix: '$GAMEDIR'."
+		fi
+	done
 }
-
-
-
 
 #### Directory for debug
-make-debugdir () {
+make_debugdir () {
 	DEBUGDIR="/tmp/$GAME-$DATE" # TODO: Set as system VAR
 
-	sudo mkdir -p $DEBGUDIR
+	sudo mkdir -p "$DEBUGDIR"
 
-	if [[ ! -w $DEBUGDIR ]]; then
-		sudo chmod +w $DEBUGDIR
-
-		else
-			echo "FATAL: Unable to write to $DEBUGDIR."
-			exit 1
+	if [[ ! -w "$DEBUGDIR" ]]; then
+		sudo chmod +w "$DEBUGDIR"
+	else
+		echo "FATAL: Unable to write to '$DEBUGDIR'."
+		exit 1
 	fi
 }
-
-
-
 
 #### DXVK config 
 dxvk_config () {
-	if [[ -e $GAMEDIR/DXVK.conf ]]; then
-		DXVK_CONFIG=$GAMEDIR/DXVK.conf
+	if [[ -e "$GAMEDIR"/DXVK.conf ]]; then
+		DXVK_CONFIG="$GAMEDIR"/DXVK.conf
 
-		else 
-			echo "DXVK.conf wasn't detected."
-			echo "Do you want to speficy path for it? (y/n)"
-			read $DXVK_CHOICE
+	else 
+		echo "DXVK.conf wasn't detected."
+		echo "Do you want to specify path for it? (y/n)"
+		read -r DXVK_CHOICE
 
-			if [[ DXVK_CHOICE == N ]] || [[ DXVK_CHOICE == n ]]; then
-				DXVK_CONF_PATH_VALID=true # To skip following loop
+		if [[ "$DXVK_CHOICE" == 'N' ]] || [[ "$DXVK_CHOICE" == 'n' ]]; then
+			DXVK_CONF_PATH_VALID=true # To skip following loop
+		fi
+
+		while [[ "$DXVK_CONF_PATH_VALID" != true ]]; do
+			if [[ "$DXVK_CHOICE" == 'Y' ]] || [[ "$DXVK_CHOICE" == 'y' ]]; then
+				echo "Specify path for DXVK.conf"
+				read -r DXVK_CONF_PATH
+				echo "INFO: DXVK_CONFIG_FILE is set on '$DXVK_CONFIG'."
+				DXVK_CONF_PATH_VALID=true
 			fi
-
-			while [[ DXVK_CONF_PATH_VALID != true ]]; do
-
-				if [[ DXVK_CHOICE == Y ]] || [[ DXVK_CHOICE == y ]]; then
-					echo "Speficy path for DXVK.conf"
-					read $DXVK_CONF_PATH
-					echo "INFO: DXVK_CONFIG_FILE is set on $DXVK_CONFIG."
-					DXVK_CONF_PATH_VALID=true
-				fi
-			done
+		done
 	fi
-
+}
 
 # WINE
 wine () {
 	# TODO: Verify that this variables are used
 	# TODO: Is $1 sufficient to grep path to wineapp?
 	WINEDEBUG='warn+all,err+all,warn+dll,err+dll'
-	WINEPREFIX='/home/$USER/.wine' 
+	WINEPREFIX="$USER/.wine" 
 	DXVK_HUD='devinfo,fps,frametimes,drawcalls,pipelines,memory,version' 
-	DXVK_CONFIG_FILE='$DXVK_CONFIG' 
-	DXVK_LOG_PATH='$DEBUGDIR/DXVK_DISHONORED.log' 
+	DXVK_CONFIG_FILE="$DXVK_CONFIG" 
+	DXVK_LOG_PATH="$DEBUGDIR/DXVK_DISHONORED.log"
 	DXVK_LOG_LEVEL='debug' 
 	DXVK_STATE_CACHE='/tmp/dishonored' 
 	wine start /unix "$1" 2>&1 | tee -a "$DEBUGDIR/dishonored2_runtime.log"
 }
 
 # Document creation
-make-markdown-doc () {
-#TODO: Grep only 3rd row in RAM
-#TODO: Outputs nothing if glxinfo not present.
-#TODO: output NONE if variable has no data e.i DXVK log if not selected
-#TODO: Make multiple echo/printf and add them to file one by one. 
-echo "
+make_markdown_doc () {
+	#TODO: Grep only 3rd row in RAM
+	#TODO: Outputs nothing if glxinfo not present.
+	#TODO: output NONE if variable has no data e.i DXVK log if not selected
+	#TODO: Make multiple echo/printf and add them to file one by one. 
+    #NOTE: rautamiekka: The TODO right above is a bad idea for non-HDD drives and unnecessary opening and closing of files. Instead, save into a variable and dump it all at once.
+	echo "
 
 # HARDWARE INFORMATIONS 
 
-CPU: $(uname -p)
+CPU architecture: $(uname -p)
 
 MOBO: fixme
 
-GPU: $(sudo lshw -C display | grep product)
+GPU: $(sudo lshw -C display | grep 'product')
 
-RAM: $(sudo lshw -short -C memory | grep "0/19/*") 
+#FIXME: rautamiekka: The address '0/19/' `grep` looks for might not exist.
+RAM: $(sudo lshw -short -C memory | grep '^0/19/') 
 
-Storage: $(sudo lshw --class disk) | grep "product")
+Storage: $(sudo lshw --class disk | grep 'product')
 
 TODO: Add more. Controllers, mics, headsets, etc.. 
 
 
 # SOFTWARE INFORMATIONS
 
-OS: $(uname -o)
+OS platform type: $(uname -o)
 
 Kernel: $(uname -r) $(uname -v)
 
-WINE: $(wine --version)
+Wine: $(wine --version)
 
-Drivers: $(screenfetch -n | grep "GPU")
+GPU drivers: $(screenfetch -n | grep 'GPU')
 
 DXVK: fixme: DXVK version
 
@@ -140,14 +134,14 @@ Xorg: $(Xorg -v | grep )
 
 Wayland: fixme: Wayland version, if present
 
-$(glxinfo | grep "OpenGL version")
+$(glxinfo | grep 'OpenGL version')
 
 
 ## Present libraries
 
-```
+\`\`\`
 $(ldconfig -p)
-```
+\`\`\`
 
 ## Loaded libraries by wine
 
@@ -157,56 +151,56 @@ theory: Invoke wike app, kill it, reinvoke?
 
 ## DXVK config
 
-```
-$(cat $DXVK_CONFIG)
-```
+\`\`\`
+$(cat "$DXVK_CONFIG")
+\`\`\`
 
-Theory for following: Define stout+sterr of wine as variable and greb output from it?
+Theory for following: Define stout+sterr of wine as variable and grep output from it?
 
 ## Wine errors
 
-```
-$(cat $DEBUGDIR/dishonored2_runtime.log | grep 'err')
-```
+\`\`\`
+$(grep 'err' < "$DEBUGDIR/dishonored2_runtime.log")
+\`\`\`
 
 ## Wine Warnings
 
-```
-$(cat $DEBUGDIR/dishonored2_runtime.log | grep 'warn')
-```
+\`\`\`
+$(grep 'warn' < "$DEBUGDIR/dishonored2_runtime.log")
+\`\`\`
 
 ## Wine fixme
 
-```
-$(cat $DEBUGDIR/dishonored2_runtime.log | grep 'fixme')
-```
+\`\`\`
+$(grep 'fixme' < "$DEBUGDIR/dishonored2_runtime.log")
+\`\`\`
 
 ## DXVK LOG
 
-```
-$($DEBUGDIR/DXVK_DISHONORED.log)
-```
+\`\`\`
+$(cat "$DEBUGDIR/DXVK_DISHONORED.log")
+\`\`\`
 
 ##### Credits
 
-Generated by Krey's Universal Wine Debugging Script (KUWDS) from https://github.com/RXT067/Scripts/KUWDS in $( date +%d.%m$.%y-%H:%M:%S ).
+Generated by Krey's Universal Wine Debugging Script (KUWDS) from https://github.com/RXT067/Scripts/KUWDS/KUWDS.sh in $(date '+%d.%m$.%y-%H:%M:%S').
 
 Contributors
 - Kreyren @ github.com/kreyren
+- rautamiekka @ github.com/rautamiekka
 
-" > $DEBUGDIR/wine-report.md
+" > "$DEBUGDIR/wine-report.md"
 }
 
-case $1 in 
+case "$1" in 
 	--help)
-	echo "can't help you, atm."
+		echo "can't help you, atm."
 	;;
 
 	*)
-	make-gamedir
-	make-debugdir
-	dxvk_config
-	wine
-	make-markdown-doc
-
+		make_gamedir
+		make_debugdir
+		dxvk_config
+		wine
+		make_markdown_doc
 esac
