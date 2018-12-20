@@ -1,6 +1,6 @@
 #### Krey's Universal Wine Debugger Script (KUWDS)
 
-Version: v0.1-ALPHA (usage not recommended)
+Version: CONCEPT, usage not recommended
 
 Abstract: Enhancement of "wine" command used for debugging + Generates a markdown document with all **usefull** informations used for debuggi
 
