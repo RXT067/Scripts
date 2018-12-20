@@ -106,6 +106,7 @@ make-markdown-doc () {
 #TODO: Grep only 3rd row in RAM
 #TODO: Outputs nothing if glxinfo not present.
 #TODO: output NONE if variable has no data e.i DXVK log if not selected
+#TODO: Make multiple echo/printf and add them to file one by one. 
 echo "
 
 # HARDWARE INFORMATIONS 
@@ -165,19 +166,19 @@ Theory for following: Define stout+sterr of wine as variable and greb output fro
 ## Wine errors
 
 ```
-$(cat dishonored2_runtime.log | grep 'err')
+$(cat $DEBUGDIR/dishonored2_runtime.log | grep 'err')
 ```
 
 ## Wine Warnings
 
 ```
-$(cat dishonored2_runtime.log | grep 'warn')
+$(cat $DEBUGDIR/dishonored2_runtime.log | grep 'warn')
 ```
 
 ## Wine fixme
 
 ```
-$(cat dishonored2_runtime.log | grep 'fixme')
+$(cat $DEBUGDIR/dishonored2_runtime.log | grep 'fixme')
 ```
 
 ## DXVK LOG
