@@ -31,48 +31,48 @@ DATE="$(date '+%d%m%y-%H%M%S')"
 #### GAMEDIR
 make_gamedir () {
 	# Keep asking for a valid path.
-	while [[ -z "$GAMEDIR" ]]; do
+	while [[ -z "${GAMEDIR}" ]]; do
 		read -r -p 'Specify full Wine prefix with a trailing backslash: '
 
-		if [[ "$GAMEDIR" =~ .*/\.wine.*/.* ]]; then
-			echo "WARN: This does NOT look like Wine prefix: '$GAMEDIR'."
+		if [[ "${GAMEDIR}" =~ .*/\.wine.*/.* ]]; then
+			echo "WARN: This does NOT look like Wine prefix: '${GAMEDIR}'."
 		fi
 	done
 }
 
 #### Directory for debug
 make_debugdir () {
-	DEBUGDIR="/tmp/$GAME-$DATE" # TODO: Set as system VAR
+	DEBUGDIR="/tmp/${GAME}-${DATE}" # TODO: Set as system VAR
 
-	sudo mkdir -p "$DEBUGDIR"
+	sudo mkdir -p "${DEBUGDIR}"
 
-	if [[ ! -w "$DEBUGDIR" ]]; then
-		sudo chmod +w "$DEBUGDIR"
+	if [[ ! -w "${DEBUGDIR}" ]]; then
+		sudo chmod +w "${DEBUGDIR}"
 	else
-		echo "FATAL: Unable to write to '$DEBUGDIR'."
+		echo "FATAL: Unable to write to '${DEBUGDIR}'."
 		exit 1
 	fi
 }
 
 #### DXVK config 
 dxvk_config () {
-	if [[ -e "$GAMEDIR"/DXVK.conf ]]; then
-		DXVK_CONFIG="$GAMEDIR"/DXVK.conf
+	if [[ -e "${GAMEDIR}"/DXVK.conf ]]; then
+		DXVK_CONFIG="${GAMEDIR}"/DXVK.conf
 
 	else 
 		echo "DXVK.conf wasn't detected."
 		echo "Do you want to specify path for it? (y/n)"
 		read -r DXVK_CHOICE
 
-		if [[ "$DXVK_CHOICE" == 'N' ]] || [[ "$DXVK_CHOICE" == 'n' ]]; then
+		if [[ "${DXVK_CHOICE}" == 'N' ]] || [[ "${DXVK_CHOICE}" == 'n' ]]; then
 			DXVK_CONF_PATH_VALID=true # To skip following loop
 		fi
 
-		while [[ "$DXVK_CONF_PATH_VALID" != true ]]; do
-			if [[ "$DXVK_CHOICE" == 'Y' ]] || [[ "$DXVK_CHOICE" == 'y' ]]; then
+		while [[ "${DXVK_CONF_PATH_VALID}" != true ]]; do
+			if [[ "${DXVK_CHOICE}" == 'Y' ]] || [[ "${DXVK_CHOICE}" == 'y' ]]; then
 				echo "Specify path for DXVK.conf"
 				read -r DXVK_CONF_PATH
-				echo "INFO: DXVK_CONFIG_FILE is set on '$DXVK_CONFIG'."
+				echo "INFO: DXVK_CONFIG_FILE is set on '${DXVK_CONFIG}'."
 				DXVK_CONF_PATH_VALID=true
 			fi
 		done
@@ -82,15 +82,14 @@ dxvk_config () {
 # WINE
 wine () {
 	# TODO: Verify that this variables are used
-	# TODO: Is $1 sufficient to grep path to wineapp?
 	WINEDEBUG='warn+all,err+all,warn+dll,err+dll'
-	WINEPREFIX="$USER/.wine" 
+	WINEPREFIX="${USER}/.wine" 
 	DXVK_HUD='devinfo,fps,frametimes,drawcalls,pipelines,memory,version' 
-	DXVK_CONFIG_FILE="$DXVK_CONFIG" 
-	DXVK_LOG_PATH="$DEBUGDIR/DXVK_DISHONORED.log"
+	DXVK_CONFIG_FILE="${DXVK_CONFIG}" 
+	DXVK_LOG_PATH="${DEBUGDIR}/DXVK_DISHONORED.log"
 	DXVK_LOG_LEVEL='debug' 
 	DXVK_STATE_CACHE='/tmp/dishonored' 
-	wine start /unix "$1" 2>&1 | tee -a "$DEBUGDIR/dishonored2_runtime.log"
+	wine start /unix "${1}" 2>&1 | tee -a "${DEBUGDIR}/dishonored2_runtime.log"
 }
 
 # Document creation
@@ -152,7 +151,7 @@ theory: Invoke wike app, kill it, reinvoke?
 ## DXVK config
 
 \`\`\`
-$(cat "$DXVK_CONFIG")
+$(cat "${DXVK_CONFIG}")
 \`\`\`
 
 Theory for following: Define stout+sterr of wine as variable and grep output from it?
@@ -160,25 +159,25 @@ Theory for following: Define stout+sterr of wine as variable and grep output fro
 ## Wine errors
 
 \`\`\`
-$(grep 'err' < "$DEBUGDIR/dishonored2_runtime.log")
+$(grep 'err' < "${DEBUGDIR}/dishonored2_runtime.log")
 \`\`\`
 
 ## Wine Warnings
 
 \`\`\`
-$(grep 'warn' < "$DEBUGDIR/dishonored2_runtime.log")
+$(grep 'warn' < "${DEBUGDIR}/dishonored2_runtime.log")
 \`\`\`
 
 ## Wine fixme
 
 \`\`\`
-$(grep 'fixme' < "$DEBUGDIR/dishonored2_runtime.log")
+$(grep 'fixme' < "${DEBUGDIR}/dishonored2_runtime.log")
 \`\`\`
 
 ## DXVK LOG
 
 \`\`\`
-$(cat "$DEBUGDIR/DXVK_DISHONORED.log")
+$(cat "${DEBUGDIR}/DXVK_DISHONORED.log")
 \`\`\`
 
 ##### Credits
@@ -189,10 +188,10 @@ Contributors
 - Kreyren @ github.com/kreyren
 - rautamiekka @ github.com/rautamiekka
 
-" > "$DEBUGDIR/wine-report.md"
+" > "${DEBUGDIR}/wine-report.md"
 }
 
-case "$1" in 
+case "${1}" in 
 	--help)
 		echo "can't help you, atm."
 	;;
