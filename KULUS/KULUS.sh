@@ -19,6 +19,14 @@
 #TODO: fail if emerge fails
 #TODO: eix update fails
 #TODO: emerge --sync perform if its been longer time 
+#TODO: Custom output for used commands.
+#TODO: output fixme on demand
+
+# TODO:
+## there's a couple of things I see wrong with that, both in the echo...
+##<greybot> echo outputs a string. echo has many portability problems, and should never be used with option flags. Consider printf instead: printf 'name: %s\n' "$name". http://wiki.bash-hackers.org/commands/builtin/echo | http://cfajohnson.com/shell/cus-faq.html#Q0b | http://www.in-ulm.de/~mascheck/various/echo+printf
+##<greybot> Don't use things like \e[1;32m, they only work in some terminals. Use tput and see man terminfo instead. Eg. red=$(tput setaf 1); echo "hello ${red}world" # See http://mywiki.wooledge.org/BashFAQ/037 http://to.lhunath.com/bashlib#L204
+
 
 
 CALLME=KULUS
@@ -127,8 +135,9 @@ fi
 # TODO: fix missing deps in package.*
 # TOOD: autounmasks
 update_gentoo () {
-
-	GENTOO_UPGRADE="PORTAGE_NICENESS=19 emerge --update --deep --jobs --newuse --autounmask-write --ignore-default-opts @world @live-rebuild"
+	PORTAGE_NICENESS=19 
+		echo "fixme: PORTAGE_NICENESS is not part of GENTOO_UPGRADE."
+	GENTOO_UPGRADE="emerge --update --deep --jobs --newuse --autounmask-write --ignore-default-opts @world @live-rebuild"
 	GENTOO_UPGRADE_SYNC="emerge --sync --ignore-default-opts"
 
 	#TODO: Detect gentoo to add else.
@@ -407,5 +416,4 @@ case $1 in
 		# Is it required?
 		#echo -e "\e[1;32m$CALLME:\e[0m '"$@"' is wrong argument results in syntax error."
 		showhelp
-		;;
 esac
