@@ -137,7 +137,8 @@ fi
 update_gentoo () {
 	PORTAGE_NICENESS=19 
 		echo "fixme: PORTAGE_NICENESS is not part of GENTOO_UPGRADE."
-	GENTOO_UPGRADE="emerge --update --deep --jobs --newuse --autounmask-write --ignore-default-opts @world @live-rebuild"
+	GENTOO_UPGRADE="emerge --update --deep --jobs --newuse --autounmask-write --with-bdeps=y --verbose-conflicts --ignore-default-opts @world"
+	GENTOO_UPGRADE_LIVE="emerge @live-rebuild" # HOTFIX, won't work in GENTOO_UPGRADE
 	GENTOO_UPGRADE_SYNC="emerge --sync --ignore-default-opts"
 
 	#TODO: Detect gentoo to add else.
@@ -152,6 +153,7 @@ update_gentoo () {
 		$GENTOO_UPGRADE
 		echo -e "\e[1;32m$CALLME:\e[0m Invoking emerge --depclean."
 		$GENTOO_UPGRADE #Workaround unmasks
+		$GENTOO_UPGRADE_LIVE
 		etc-update --quiet --automode -3 
 		sleep 2
 		emerge --depclean
@@ -168,6 +170,7 @@ update_gentoo () {
 			echo -e "\e[1;32m$CALLME:\e[0m Invoking emerge --depclean."
 			etc-update --quiet --automode -3 
 			sudo $GENTOO_UPGRADE #workaround unmasks
+			$GENTOO_UPGRADE_LIVE
 			sleep 2
 			emerge --depclean
 			echo -e "\e[1;32m$CALLME:\e[0m Finished updating gentoo."
@@ -185,6 +188,7 @@ update_gentoo () {
 			echo -e "\e[1;32m$CALLME:\e[0m Invoking emerge --depclean from $USER using 'su'."
 			etc-update --quiet --automode -3 
 			su -c "$GENTOO_UPGRADE" #workaround unmasks
+			$GENTOO_UPGRADE_LIVE
 			sleep 2
 			emerge --depclean
 			echo -e "\e[1;32m$CALLME:\e[0m Finished updating gentoo."
