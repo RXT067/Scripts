@@ -11,9 +11,6 @@ if [[ -e $(command -v wine) ]] && [[ WINE_VERSION => 3.21 ]] && [[ $(wine --vers
 		exit 0
 
 
-
-if [[ WINE_VERSION > ]]
-
 GAME="LeagueOfLegends"
 
 while [[ ${REGION} != @(EUNE|NA|EUW|BR|LAN|LAS|OCE|RU|JP|SEA) ]]; do 
