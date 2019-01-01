@@ -98,19 +98,6 @@ WINE_KUWAC () {
 
 }
 
-confirm_KUWAC () {
-	echo "We will.."
-	if [[ SOURCE != "" ]] && [[ INSTALLER != PRESENT ]]; then
-		echo "Download installer from $SOURCE in /home/$USER/Downloads/"
-	fi
-
-
-
-
-}
-
-confirm_KUWAC
-
 fetch_source_KUWAC
 
 winetricks_KUWAC
