@@ -5,3 +5,6 @@ Version: 0.0-concept
 
 ### Abstract
 Install and configure wineapp to be installed on any unix system.
+
+### TODO
+Make an ebuild using RXT067/KGGO's approach for KUWAC
