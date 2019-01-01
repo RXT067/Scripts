@@ -1,5 +1,19 @@
 WINETRICKS_OPTIONS="corefonts vcrun2008 vcrun2017 adobeair winxp"
 
+WINE_CHECK=$(wine --version); IFS=- read -r _ WINE_VERSION WINE_REVISION _ <<<"$WINE_CHECK"; 
+
+if [[ -e $(command -v wine) ]] && [[ WINE_VERSION => 3.21 ]] && [[ $(wine --version | grep -o "(Staging)") == "(Staging)" ]]; then
+	echo "WINE is sufficient" &> /dev/null
+
+	else
+		echo "FATAL: WINE is not sufficient"
+		expected "Wine 3.21-staging or higher"
+		exit 0
+
+
+
+if [[ WINE_VERSION > ]]
+
 GAME="LeagueOfLegends"
 
 while [[ ${REGION} != @(EUNE|NA|EUW|BR|LAN|LAS|OCE|RU|JP|SEA) ]]; do 
