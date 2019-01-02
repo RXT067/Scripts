@@ -9,7 +9,7 @@ if [[ -e $(command -v wine) ]] && [[ WINE_VERSION => 3.21 ]] && [[ $(wine --vers
 		echo "FATAL: WINE is not sufficient"
 		expected "Wine 3.21-staging or higher"
 		exit 0
-
+fi
 
 GAME="LeagueOfLegends"
 
