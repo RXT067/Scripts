@@ -122,7 +122,7 @@ case $1 in
 	--help)
 		showhelp
 	;;
-	[])
+	"")
 		showhelp
 	;;
 	*) # TODO: If blank showhelp
