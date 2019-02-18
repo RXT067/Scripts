@@ -2,7 +2,7 @@
 # Name        : KreyMyChroot (KMS)
 # Description : KreyMyChroot uses environment variables to chroot into available filesystems on multiboot systems
 # Author      : github.com/kreyren
-# Licence     : GPLv2
+# Licence     : GPLv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.cs.html)
 
 CALLME=KMC
 
