@@ -42,75 +42,93 @@ checkroot () {
 			echo -e "\e[1;32m$CALLME:\e[0m Failed to aquire root permission, trying using su."
 			su -c "$0 $@"
 			exit 1
-
 	fi
 }
 
 sanity-check () {
-		echo "We will mount $DIR and chroot, continue? (y/n)"
+		echo "We will mount $mntdir and chroot, continue? (y/n)"
 		read sanity
 
-		if [[ sanity != @(Y|y) ]]; then
+		if [[ $sanity != @(Y|y|yes|YES) ]]; then
 			exit 0
 		fi
 }
 
 chroot-me-senpaii () {
-DIR=/mnt/${1^^}
 
-	# Sanity check for ${1^^}_CHROOT
-	while [[ ! -b ${1^^}_CHROOT ]]; do # If ${1^^}_CHROOT is not block device, then
-		echo "ERROR: ${1^^}_CHROOT is not block device."
-
+	# Sanity check for blkdev
+	## CHALLENGE: Try to select it automatically if not block device
+	### THEORY: Mount, check it's data (ask for encryption password if encrypted), umount?
+	while [[ ! -b $blkdev ]]; do # If $blkdev is not block device, then
+		echo "ERROR: block_device variable is not block device."
+		echo "HINT: block_device variable is used to idetify block device, expected /dev/sd[a-z][0-9]"
 		echo "(R)etry, (M)anuall"
 		read sanity_choice
-		if [[ sanity_choice == @(M|m) ]]; then
-			# Expected /dev/{USER_INPUT}
-			echo "Enter ${1^^}_CHROOT variable manually:"
-			read ${1^^}_CHROOT
+
+		if [[ $sanity_choice == @(M|m) ]]; then
+			echo "Enter block_device variable manually:"
+			echo "HINT: block_device variable is used to idetify block device, expected /dev/sd[a-z][0-9]"
+			read block_device # TODO: Expected /dev/{USER_INPUT} to avoid end-user confusion
+			# read blockdevice -p '/dev/' # I have no hugging idea
+			## Relevant: https://github.com/Kreyren/KreyOverlay/blob/be1b9e566dce00d489333426e32621b6bb872f0e/games-util/.phoenicis/phoenicis-5.0_alpha2.ebuild#L67
 		fi
 	done
 
-	# Create a directory for chroot
-	if [[ ! -e $DIR ]]; then
-		mkdir -p $DIR || echo "FATAL: Unable to make new directory $DIR." && exit 0
+	# Sanity check for mount_directory
+	## CHALLENGE: Try to select it automaticaly if blank
+	### THEORY: Based on data from blkdev variable?
+	while [[ -z $mntdir ]]; do
+		echo "ERROR: mount_directory variable is blank."
+		echo "Enter it manually:"
+		echo "HINT: mount_directory variable is used to for mount directory, expected /mnt/something"
+		read mntdir # TODO: Expected /mnt/{USER_INPUT}
+	done
+
+	# Create a directory for chroot if not present
+	if [[ ! -e $mntdir ]]; then
+		mkdir -p $mntdir || echo "FATAL: Unable to make new directory $mntdir." && exit 0
 
 		else
-			echo "INFO: $DIR is present."
+			echo "INFO: $mntdir is present."
 	fi
 
-	# Mount directory 
-	if [[ $(mount | grep -o "${1^^}_CHROOT on $DIR") != ${1^^}_CHROOT on $DIR ]]; then
-		mount ${1^^}_CHROOT $DIR || echo "FATAL: Mounting ${1^^}_CHROOT to $DIR failed!" && exit 0
+	# Mount directory if not mounted
+	if [[ $(mount | grep -o "$blkdev on $mntdir") != "$blkdev on $mntdir" ]]; then
+		mount $blkdev $mntdir || echo "FATAL: Mounting $blkdev to $mntdir failed!" && exit 0
 
 		else 
-			echo "INFO: ${1^^}_CHROOT in mounted on $DIR"
+			echo "INFO: $blkdev in mounted on $mntdir"
 	fi 
 
 	# Chroot in if possible
-	if [[ -e ${1^^}_CHROOT/etc ]]; then
-		mount --rbind /dev $DIR/dev || echo "ERROR: Unable to rbind /dev to $DIR/dev." 
-		mount --make-rslave $DIR/dev || echo "ERROR: Unable to make-rslave of $DIR/dev."
-		mount -t proc /proc $DIR/proc || echo "ERROR: Unable to mount proc."
-		mount --rbind /sys $DIR/sys || echo "ERROR: Unable to rbind /sys to $DIR/sys"
-		mount --make-rslave $DIR/sys || echo "ERROR: Unable to make-rslave of $DIR/tmp"
-		mount --rbind /tmp $DIR/tmp || echo "ERROR: Unable to rbind /tmp to $DIR/tmp"
+	if [[ -e $mntdir/etc ]]; then # TODO: Sufficient?
+		mount --rbind /dev $mntdir/dev || echo "ERROR: Unable to rbind /dev to $mntdir/dev." 
+		mount --make-rslave $mntdir/dev || echo "ERROR: Unable to make-rslave of $mntdir/dev."
+		mount -t proc /proc $mntdir/proc || echo "ERROR: Unable to mount proc."
+		mount --rbind /sys $mntdir/sys || echo "ERROR: Unable to rbind /sys to $mntdir/sys"
+		mount --make-rslave $mntdir/sys || echo "ERROR: Unable to make-rslave of $mntdir/tmp"
+		mount --rbind /tmp $mntdir/tmp || echo "ERROR: Unable to rbind /tmp to $mntdir/tmp"
 
 		else 
-			echo "FATAL: ${1^^}_CHROOT/etc not found -> We won't chroot."
+			echo "FATAL: $mntdir/etc not found -> It's impossible to change root to a block device that doesn't have working system loaded."
 	fi
 }
 
 showhelp () {
-	echo "This script is going to take argument and convert it into /mnt/<argument> and tries to chroot in if possible."
+	echo "This script is going to take it's argument and convert it into /mnt/<argument> and tries to change root in if possible."
 }
 
 case $1 in
 	--help)
 		showhelp
 	;;
-	*)
+	[])
+		showhelp
+	;;
+	*) # TODO: If blank showhelp
 		checkroot $@
+		mntdir=/mnt/$1 # MouNT Directory
+		## TODO: expected lowercase
 		dependency
 		sanity-check
 		chroot-me-senpaii

@@ -88,4 +88,7 @@
 #<03> oh, maybe hash
 #<03> good point
 #<02> 01: looks like in case was requred stop only a fuction :)
+
+## IMPROVEMENT 9
+# kreyren: add http://mywiki.wooledge.org/BashFAQ and http://mywiki.wooledge.org/BashGuide to your browser's favorites.  perhaps also the pitfalls page
 ```
