@@ -54,6 +54,8 @@ chroot-me-senpaii () {
 		read CHOICE
 		if [[ CHOICE == @(M|m) ]]; then
 			# Expected /dev/{USER_INPUT}
+			echo "Enter $1_CHROOT variable manually:"
+			read $1_CHROOT
 		fi
 	done
 
@@ -62,6 +64,7 @@ chroot-me-senpaii () {
 		mkdir -p $DIR || echo "FATAL: Unable to make new directory $DIR." && exit 0
 	fi
 
+	# Chroot in
 	mount $1_CHROOT $DIR || echo "FATAL: Mounting $GENTOO_CHROOT to $DIR failed!" && exit 0
 	mount --rbind /dev $DIR/dev || echo "ERROR: Unable to rbind /dev to $DIR/dev." 
 	mount --make-rslave $DIR/dev || echo "ERROR: Unable to make-rslave of $DIR/dev."
@@ -71,7 +74,18 @@ chroot-me-senpaii () {
 	mount --rbind /tmp $DIR/tmp || echo "ERROR: Unable to rbind /tmp to $DIR/tmp"
 }
 
+showhelp () {
+	echo "KreyMyChroot uses environment variables to chroot into available filesystems on multiboot systems
+--gentoo   : To chroot in gentoo system.
+--ubuntu   : To chroot in ubuntu system.
+--LFS      : To chroot in LFS system.
+--OpenSUSE : To chroot in OpenSUSE system.
+	"
+}
+
+
 case $1 in
+# TODO: Grep $1, capitalize it and use
 	--gentoo)
 		checkroot $@
 		1=GENTOO
