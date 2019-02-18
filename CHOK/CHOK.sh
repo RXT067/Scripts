@@ -54,7 +54,20 @@ sanity-check () {
 		fi
 }
 
+bashrc_vars () {
+# Abstract get .bashrc variables $1_CHROOT for blkdev var
+
+	return
+}
+
 chroot-me-senpaii () {
+
+	# Sanity check for distro specific $1
+	if [[ -z blkdev && $1 = @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
+		echo "FATAL: ${$1^^}_CHROOT (eg. GENTOO_CHROOT=/dev/sda1) variable is blank, export it in .bashrc and reinvoke the script."
+		echo "EXAMPLE: export GENTOO_CHROOT=/dev/sda1"
+		exit 0
+	fi
 
 	# Sanity check for blkdev
 	## CHALLENGE: Try to select it automatically if not block device
@@ -101,35 +114,90 @@ chroot-me-senpaii () {
 	fi 
 
 	# Chroot in if possible
-	if [[ -e $mntdir/etc ]]; then # TODO: Sufficient?
-		mount --rbind /dev $mntdir/dev || echo "ERROR: Unable to rbind /dev to $mntdir/dev." 
-		mount --make-rslave $mntdir/dev || echo "ERROR: Unable to make-rslave of $mntdir/dev."
-		mount -t proc /proc $mntdir/proc || echo "ERROR: Unable to mount proc."
-		mount --rbind /sys $mntdir/sys || echo "ERROR: Unable to rbind /sys to $mntdir/sys"
-		mount --make-rslave $mntdir/sys || echo "ERROR: Unable to make-rslave of $mntdir/tmp"
-		mount --rbind /tmp $mntdir/tmp || echo "ERROR: Unable to rbind /tmp to $mntdir/tmp"
+	if [[ -e ${mntdir}/etc ]]; then # TODO: Sufficient?
+		mount --rbind /dev ${mntdir}/dev || echo "ERROR: Unable to rbind /dev to ${mntdir}/dev." 
+		mount --make-rslave ${mntdir}/dev || echo "ERROR: Unable to make-rslave of ${mntdir}/dev."
+		mount -t proc /proc ${mntdir}/proc || echo "ERROR: Unable to mount proc."
+		mount --rbind /sys ${mntdir}/sys || echo "ERROR: Unable to rbind /sys to ${mntdir}/sys"
+		mount --make-rslave ${mntdir}/sys || echo "ERROR: Unable to make-rslave of ${mntdir}/tmp"
+		mount --rbind /tmp ${mntdir}/tmp || echo "ERROR: Unable to rbind /tmp to ${mntdir}/tmp"
 
 		else 
-			echo "FATAL: $mntdir/etc not found -> It's impossible to change root to a block device that doesn't have working system loaded."
+			echo "FATAL: ${mntdir}/etc not found -> It's impossible to change root to a block device that doesn't have working system loaded."
 	fi
 }
 
 showhelp () {
-	echo "This script is going to take it's argument and convert it into /mnt/<argument> and tries to change root in if possible."
+	echo "ChrooterOfKreys (CHOK)
+This script is going to take it's argument and convert it into /mnt/<argument> and tries to change root in if possible.
+
+Accepted variables:
+GENTOO_CHROOT   = Set block_device for Gentoo Linux
+ARCH_CHROOT     = Set block_device for Arch (GNU/)Linux
+UBUNTU_CHROOT   = Set block_device for Ubuntu (GNU/)Linux
+LFS_CHROOT      = Set block_device for Linux From Scratch/Source
+OPENSUSE_CHROOT = Set block_device for OpenSUSE (GNU/)Linux
+
+Accepted arguments:
+--gentoo        = Change root into gentoo based on GENTOO_CHROOT variable.
+--arch          = Change root into arch based on ARCH_CHROOT variable.
+--ubuntu        = Change root into ubuntu based on UBUNTU_CHROOT variable.
+--lfs           = Change root into lfs based on LFS_CHROOT variable.
+--opensuse      = Change root into opensuse based on OPENSUSE_CHROOT variable.
+"
 }
 
 case $1 in
-	--help)
+	--help|"")
 		showhelp
 	;;
-	"")
-		showhelp
+	--gentoo)
+	checkroot $@
+	blkdev=${GENTOO_CHROOT}
+	dependency
+	sanity-check
+	bashrc_vars
+	chroot-me-senpaii
 	;;
-	*) # TODO: If blank showhelp
+	--lfs)
+	checkroot $@
+	blkdev=${LFS_CHROOT}
+	dependency
+	sanity-check
+	bashrc_vars
+	chroot-me-senpaii
+	;;
+	--opensuse)
+	checkroot $@
+	blkdev=${LFS_CHROOT}
+	dependency
+	sanity-check
+	bashrc_vars
+	chroot-me-senpaii
+	;;
+	--ubuntu)
+	checkroot $@
+	blkdev=${LFS_CHROOT}
+	dependency
+	sanity-check
+	bashrc_vars
+	chroot-me-senpaii
+	;;
+	--arch)
+	checkroot $@
+	blkdev=${ARCH_CHROOT}
+	dependency
+	sanity-check
+	bashrc_vars
+	chroot-me-senpaii
+	;;
+	--custom)
 		checkroot $@
 		mntdir=/mnt/$1 # MouNT Directory
 		## TODO: expected lowercase
+		unset blkdev
 		dependency
 		sanity-check
+		bashrc_vars
 		chroot-me-senpaii
 esac
