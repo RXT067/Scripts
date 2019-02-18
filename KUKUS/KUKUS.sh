@@ -4,6 +4,10 @@
 # Made by github.com/kreyren
 # LICENCE: GNUv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
+
+# TODO
+## Add funtoo support if mounted on /mnt/funtoo
+
 CALLME=KUKUS
 
 checkroot () {
@@ -45,6 +49,13 @@ update-kernel () {
 			else
 				echo "FATAL_ERROR: Command 'make' is not present."
 				exit 1
+		fi
+
+		if [[ -x $(command -v donotrunthisshit) && -x $(command -v make) && -e /mnt/funtoo/usr/src/linux/.config ]]; then
+			su -c "cd /mnt/funtoo/usr/src/linux && make modules_install && make install"
+
+			else
+				echo "INFO: funtoo not detected."
 		fi
 
 		su -c "grub-install --force /dev/sda" #TODO: Needs to be set based on system.

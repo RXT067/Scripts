@@ -27,6 +27,7 @@
 ##<greybot> echo outputs a string. echo has many portability problems, and should never be used with option flags. Consider printf instead: printf 'name: %s\n' "$name". http://wiki.bash-hackers.org/commands/builtin/echo | http://cfajohnson.com/shell/cus-faq.html#Q0b | http://www.in-ulm.de/~mascheck/various/echo+printf
 ##<greybot> Don't use things like \e[1;32m, they only work in some terminals. Use tput and see man terminfo instead. Eg. red=$(tput setaf 1); echo "hello ${red}world" # See http://mywiki.wooledge.org/BashFAQ/037 http://to.lhunath.com/bashlib#L204
 
+# Status: It's horrible neede redone
 
 
 CALLME=KULUS
@@ -111,7 +112,7 @@ FEDORA_UPDATE="dnf upgrade -y"
 
 update_gentoo-2.0 () {
 # Pushing limits!
-GENTOO_UPGRADE="emerge --update --deep --jobs --newuse --quiet --ignore-default-opts @world @live-rebuild"
+GENTOO_UPGRADE="emerge --oneshot portage && emerge --update --deep --jobs --newuse --quiet --ignore-default-opts @world @live-rebuild"
 GENTOO_UPGRADE_SYNC="emerge --sync --ignore-default-opts"
 
 	if [[ -x "$(command -v emerge)" ]] && [[ $UID == 0 ]]; then 
@@ -147,6 +148,7 @@ update_gentoo () {
 	if [[ -x "$(command -v emerge)" ]] && [[ $UID == 0 ]]; then 
 		echo -e "\e[1;32m$CALLME:\e[0m Invoking '$GENTOO_UPGRADE_SYNC' from $USER."
 		$GENTOO_UPGRADE_SYNC
+		emerge --oneshot portage # Fixme
 		sleep 2
 		echo -e "\e[1;32m$CALLME:\e[0m Invoking '$GENTOO_UPGRADE' from $USER."
 		sleep 2
@@ -347,6 +349,15 @@ update_epkg () {
 	fi
 }
 
+
+# Update layman
+update_layman () {
+	if [[ $UID == 0 && -x $(command -v layman) ]]; then
+		layman -S
+	fi
+}
+
+
 # TODO - REMOVE IFSELF IF INVOKED FROM WINDOWS/MACOS AND TELL THE USER THAT IT'S A MONSTER.
 
 # ARGUMENTS
@@ -361,6 +372,7 @@ case $1 in
 		update_eix
 		update_mlocate
 		update_epkg
+		update_layman
 		;;
 
 	#TODO: doesn't work	
