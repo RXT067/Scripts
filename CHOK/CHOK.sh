@@ -28,8 +28,9 @@ dependency () {
 	fi
 }
 
-# CHECK ROOT
 checkroot () {
+# Check user permission and offers to re-invoke itself as root
+
 	if [[ $UID == 0 ]]; then
 		return
 
@@ -46,6 +47,8 @@ checkroot () {
 }
 
 sanity-check () {
+# Sanity check for user to run this script.
+
 		echo "We will mount $mntdir and chroot, continue? (y/n)"
 		read sanity
 
@@ -54,20 +57,24 @@ sanity-check () {
 		fi
 }
 
-bashrc_vars () {
-# Abstract get .bashrc variables $1_CHROOT for blkdev var
+standartize_variables () {
+# Checks variables for blkdev and mntdir and standartize them if not already.
 
 	return
 }
 
-chroot-me-senpaii () {
+bashrc_vars () {
+# Abstract get .bashrc variables $1_CHROOT for blkdev var
 
 	# Sanity check for distro specific $1
-	if [[ -z blkdev && $1 = @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
+	if [[ -z blkdev && $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
 		echo "FATAL: ${$1^^}_CHROOT (eg. GENTOO_CHROOT=/dev/sda1) variable is blank, export it in .bashrc and reinvoke the script."
 		echo "EXAMPLE: export GENTOO_CHROOT=/dev/sda1"
 		exit 0
 	fi
+}
+
+chroot-me-senpaii () {
 
 	# Sanity check for blkdev
 	## CHALLENGE: Try to select it automatically if not block device
@@ -132,11 +139,11 @@ showhelp () {
 This script is going to take it's argument and convert it into /mnt/<argument> and tries to change root in if possible.
 
 Accepted variables:
-GENTOO_CHROOT   = Set block_device for Gentoo Linux
-ARCH_CHROOT     = Set block_device for Arch (GNU/)Linux
-UBUNTU_CHROOT   = Set block_device for Ubuntu (GNU/)Linux
-LFS_CHROOT      = Set block_device for Linux From Scratch/Source
-OPENSUSE_CHROOT = Set block_device for OpenSUSE (GNU/)Linux
+GENTOO_CHROOT   = Set block_device variable for Gentoo Linux
+ARCH_CHROOT     = Set block_device variable for Arch (GNU/)Linux
+UBUNTU_CHROOT   = Set block_device variable for Ubuntu (GNU/)Linux
+LFS_CHROOT      = Set block_device variable for Linux From Scratch/Source
+OPENSUSE_CHROOT = Set block_device variable for OpenSUSE (GNU/)Linux
 
 Accepted arguments:
 --gentoo        = Change root into gentoo based on GENTOO_CHROOT variable.
@@ -151,47 +158,47 @@ case $1 in
 	--help|"")
 		showhelp
 	;;
-	--gentoo)
-	checkroot $@
-	blkdev=${GENTOO_CHROOT}
-	dependency
-	sanity-check
-	bashrc_vars
-	chroot-me-senpaii
+	--gentoo|gentoo|Gentoo)
+		checkroot $@
+		blkdev=${GENTOO_CHROOT}
+		dependency
+		sanity-check
+		bashrc_vars
+		chroot-me-senpaii
 	;;
-	--lfs)
-	checkroot $@
-	blkdev=${LFS_CHROOT}
-	dependency
-	sanity-check
-	bashrc_vars
-	chroot-me-senpaii
+	--lfs|lfs|LFS)
+		checkroot $@
+		blkdev=${LFS_CHROOT}
+		dependency
+		sanity-check
+		bashrc_vars
+		chroot-me-senpaii
 	;;
-	--opensuse)
-	checkroot $@
-	blkdev=${LFS_CHROOT}
-	dependency
-	sanity-check
-	bashrc_vars
-	chroot-me-senpaii
+	--opensuse|opensuse|OpenSUSE)
+		checkroot $@
+		blkdev=${LFS_CHROOT}
+		dependency
+		sanity-check
+		bashrc_vars
+		chroot-me-senpaii
 	;;
-	--ubuntu)
-	checkroot $@
-	blkdev=${LFS_CHROOT}
-	dependency
-	sanity-check
-	bashrc_vars
-	chroot-me-senpaii
+	--ubuntu|ubuntu)
+		checkroot $@
+		blkdev=${LFS_CHROOT}
+		dependency
+		sanity-check
+		bashrc_vars
+		chroot-me-senpaii
 	;;
-	--arch)
-	checkroot $@
-	blkdev=${ARCH_CHROOT}
-	dependency
-	sanity-check
-	bashrc_vars
-	chroot-me-senpaii
+	--arch|arch)
+		checkroot $@
+		blkdev=${ARCH_CHROOT}
+		dependency
+		sanity-check
+		bashrc_vars
+		chroot-me-senpaii
 	;;
-	--custom)
+	--custom|custom)
 		checkroot $@
 		mntdir=/mnt/$1 # MouNT Directory
 		## TODO: expected lowercase
@@ -200,4 +207,6 @@ case $1 in
 		sanity-check
 		bashrc_vars
 		chroot-me-senpaii
+	*)
+		showhelp
 esac
