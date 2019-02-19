@@ -51,50 +51,55 @@ checkroot () {
 sanity-check () {
 # Sanity check for user to run this script.
 
-		echo "We will mount $mntdir and chroot, continue? (y/n)"
+		echo "This script will mount and chroot into desired filesystem, continue? (y/n)"
 		read sanity
 
 		if [[ $sanity != @(Y|y|yes|YES) ]]; then
 			exit 0
 		fi
 
-		while [[ $2 != "" && $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; do
+		while [[ $2 != "" && $1 == @(--gentoo|gentoo|Gentoo|--arch|arch|Arch|--ubuntu|ubuntu|Ubuntu|--lfs|lfs|LFS|--opensuse|opensuse|OpenSUSE) ]]; do
 			echo "ERROR: This script doesn't accept two arguments."
 			echo "INFO: First argument: $1"
 			echo "INFO: Second argument: $2"
-			unset $2
-			echo "Please input correct first argument."
-			echo "--gentoo        = Change root into gentoo based on GENTOO_CHROOT variable.
---arch          = Change root into arch based on ARCH_CHROOT variable.
---ubuntu        = Change root into ubuntu based on UBUNTU_CHROOT variable.
---lfs           = Change root into lfs based on LFS_CHROOT variable.
---opensuse      = Change root into opensuse based on OPENSUSE_CHROOT variable."
-			read $1
-		do
+
+			echo "We will unset second argument, continue? (y/n)"
+			read second_argument_conflict
+
+			if [[ $second_argument_conflict == @(y|Y|YES|Yes|yes) ]]; then
+				unset $2
+
+				else
+					exit 0
+			fi
+
+		done
 }
 
 standartize_variables () {
 # Checks variables for blkdev and mntdir and standartize them if not already.
+## TODO
 
 	return
 }
 
 bashrc_vars () {
-# Abstract get .bashrc variables ${1^^}_CHROOT for blkdev var
+# Abstract get .bashrc variables ${1^^_CHROOT for blkdev var}
 	
 	# Set blkdev if argument is recognized.
-	if [[ $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
-		blkdev=${1^^}_CHROOT
+	if [[ $1 == @(--gentoo|gentoo|Gentoo|--arch|arch|Arch|--ubuntu|ubuntu|Ubuntu|--lfs|lfs|LFS|--opensuse|opensuse|OpenSUSE) ]]; then
+		blkdev=${1^^_CHROOT}
+		echo "INFO: Set block_device on ${1^^_CHROOT}"
 	fi
 
 	# Sanity check for distro specific $1
-	if [[ $blkdev == @(""|_CHROOT) && $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
-		echo "ERROR: ${1^^}_CHROOT (eg. GENTOO_CHROOT=/dev/sda1) variable is blank, export it in $HOME/.bashrc to continue.."
+	while [[ $blkdev == @(""|_CHROOT) && $1 == @(--gentoo|gentoo|Gentoo|--arch|arch|Arch|--ubuntu|ubuntu|Ubuntu|--lfs|lfs|LFS|--opensuse|opensuse|OpenSUSE) ]]; do
+		echo "ERROR: ${1^^_CHROOT} (eg. GENTOO_CHROOT=/dev/sda1) variable is blank, export it in $HOME/.bashrc to continue.."
 		echo "EXAMPLE: export GENTOO_CHROOT=/dev/sda1"
 		read irelevant
 
 		echo "INFO: Reading from $HOME/.bashrc" && source $HOME/.bashrc
-	fi
+	done
 }
 
 chroot-me-senpaii () {
@@ -104,9 +109,10 @@ chroot-me-senpaii () {
 	### THEORY: Mount, check it's data (ask for encryption password if encrypted), umount?
 	while [[ ! -b $blkdev ]]; do # If $blkdev is not block device, then
 		echo "ERROR: block_device variable is not block device."
+		echo "INFO: block_device=${blkdev}"
 		echo "HINT: block_device variable is used to idetify block device, expected /dev/sd[a-z][0-9]"
 
-		if [[ $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
+		if [[ $1 == @(--gentoo|gentoo|Gentoo|--arch|arch|Arch|--ubuntu|ubuntu|Ubuntu|--lfs|lfs|LFS|--opensuse|opensuse|OpenSUSE) ]]; then
 			echo "HINT: Expected GENTOO_CHROOT, ARCH_CHROOT, UBUNTU_CHROOT, LFS_CHROOT or OPENSUSE_CHROOT pointing to desired block_device in $HOME/.bashrc"
 		fi
 
@@ -184,9 +190,6 @@ Accepted arguments:
 }
 
 case $1 in
-	--help|""|*)
-		showhelp
-	;;
 	--gentoo|gentoo|Gentoo)
 		checkroot $@
 		blkdev=${GENTOO_CHROOT}
@@ -221,7 +224,7 @@ case $1 in
 	;;
 	--arch|arch)
 		checkroot $@
-		blkdev=${ARCH_CHROOT}
+		blkdev=${ARCH_CHROOT} 
 		dependency
 		sanity-check
 		bashrc_vars
@@ -235,4 +238,11 @@ case $1 in
 		dependency
 		bashrc_vars
 		chroot-me-senpaii
+	;;
+	--test|test)
+		echo "NIMMY!"
+		exit 0
+	;;
+	--help|""|*)
+		showhelp
 esac
