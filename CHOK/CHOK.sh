@@ -155,7 +155,7 @@ Accepted arguments:
 }
 
 case $1 in
-	--help|"")
+	--help|""|*)
 		showhelp
 	;;
 	--gentoo|gentoo|Gentoo)
@@ -207,6 +207,4 @@ case $1 in
 		sanity-check
 		bashrc_vars
 		chroot-me-senpaii
-	*)
-		showhelp
 esac
