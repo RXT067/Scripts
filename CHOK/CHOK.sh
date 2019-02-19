@@ -2,11 +2,13 @@
 # Name        : ChrooterOfKreys (CHOK)
 # Description : CHOK is tool that is used to create mount directory and change root into it.
 # Author      : github.com/kreyren
-# license     : GPLv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.cs.html)
+# License     : GPLv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.cs.html)
+# Abstract	  : Makes chrooting easier without the need to copypaste chroot command from gentoo wiki, because Tamiko removed your copypaste contribution(https://wiki.gentoo.org/index.php?title=Chroot&diff=745920&oldid=743058).. What a dick
 
 CALLME=CHOK
 
 dependency () {
+# TODO: Import dependencies with a script if they are not present on the system.
 	if [[ ! -x $(command -v chroot) ]]; then
 		echo "FATAL: Command 'chroot' is not executable!"
 		exit 0
@@ -55,6 +57,20 @@ sanity-check () {
 		if [[ $sanity != @(Y|y|yes|YES) ]]; then
 			exit 0
 		fi
+
+		while [[ $2 != "" && $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; do
+			echo "ERROR: This script doesn't accept two arguments."
+			echo "INFO: First argument: $1"
+			echo "INFO: Second argument: $2"
+			unset $2
+			echo "Please input correct first argument."
+			echo "--gentoo        = Change root into gentoo based on GENTOO_CHROOT variable.
+--arch          = Change root into arch based on ARCH_CHROOT variable.
+--ubuntu        = Change root into ubuntu based on UBUNTU_CHROOT variable.
+--lfs           = Change root into lfs based on LFS_CHROOT variable.
+--opensuse      = Change root into opensuse based on OPENSUSE_CHROOT variable."
+			read $1
+		do
 }
 
 standartize_variables () {
@@ -64,13 +80,20 @@ standartize_variables () {
 }
 
 bashrc_vars () {
-# Abstract get .bashrc variables $1_CHROOT for blkdev var
+# Abstract get .bashrc variables ${1^^}_CHROOT for blkdev var
+	
+	# Set blkdev if argument is recognized.
+	if [[ $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
+		blkdev=${1^^}_CHROOT
+	fi
 
 	# Sanity check for distro specific $1
-	if [[ -z blkdev && $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
-		echo "FATAL: ${$1^^}_CHROOT (eg. GENTOO_CHROOT=/dev/sda1) variable is blank, export it in .bashrc and reinvoke the script."
+	if [[ $blkdev == @(""|_CHROOT) && $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
+		echo "ERROR: ${1^^}_CHROOT (eg. GENTOO_CHROOT=/dev/sda1) variable is blank, export it in $HOME/.bashrc to continue.."
 		echo "EXAMPLE: export GENTOO_CHROOT=/dev/sda1"
-		exit 0
+		read irelevant
+
+		echo "INFO: Reading from $HOME/.bashrc" && source $HOME/.bashrc
 	fi
 }
 
@@ -82,15 +105,21 @@ chroot-me-senpaii () {
 	while [[ ! -b $blkdev ]]; do # If $blkdev is not block device, then
 		echo "ERROR: block_device variable is not block device."
 		echo "HINT: block_device variable is used to idetify block device, expected /dev/sd[a-z][0-9]"
+
+		if [[ $1 == @(--gentoo|--arch|--ubuntu|--lfs|--opensuse) ]]; then
+			echo "HINT: Expected GENTOO_CHROOT, ARCH_CHROOT, UBUNTU_CHROOT, LFS_CHROOT or OPENSUSE_CHROOT pointing to desired block_device in $HOME/.bashrc"
+		fi
+
 		echo "(R)etry, (M)anuall"
 		read sanity_choice
 
 		if [[ $sanity_choice == @(M|m) ]]; then
 			echo "Enter block_device variable manually:"
 			echo "HINT: block_device variable is used to idetify block device, expected /dev/sd[a-z][0-9]"
-			read block_device # TODO: Expected /dev/{USER_INPUT} to avoid end-user confusion
-			# read blockdevice -p '/dev/' # I have no hugging idea
-			## Relevant: https://github.com/Kreyren/KreyOverlay/blob/be1b9e566dce00d489333426e32621b6bb872f0e/games-util/.phoenicis/phoenicis-5.0_alpha2.ebuild#L67
+			read -p block_device{=/dev/sd,}
+
+			else
+				echo "INFO: Reading from $HOME/.bashrc" && source $HOME/.bashrc
 		fi
 	done
 
@@ -204,7 +233,6 @@ case $1 in
 		## TODO: expected lowercase
 		unset blkdev
 		dependency
-		sanity-check
 		bashrc_vars
 		chroot-me-senpaii
 esac
