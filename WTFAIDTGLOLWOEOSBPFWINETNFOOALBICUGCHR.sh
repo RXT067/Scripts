@@ -34,6 +34,9 @@ if [[ ! -b $1 && ! -d $2 && $2 != "/mnt/*" ]] && [[ $(mount | grep -o "$1 on") !
  		nameserver 2606:4700:4700:1111
  		nameserver 2606:4700:4700:1001" >> $2/etc/resolv.conf
  		chroot $2 /bin/bash 
+
+ 		emerge --sync && emerge layman && layman -S && layman -a bobwya && emerge =app-emulation/wine-staging-4.2_p1::bobwya =app-emulation/winetricks-winetricks-99999999::bobwya xfce-meta && winetricks --self-update && winetricks corefonts vcrun2008 vcrun2017 adobeair winxp && mkdir /root/Download ; cd /root/Downloads && wget https://riotgamespatcher-a.akamaihd.net/releases/live/installer/deploy/League%20of%20Legends%20installer%20EUNE.exe && echo "ck-launch-session dbus-launch --sh-syntax --exit-with-session xfce4-session
+" >> /root/.xinitrc && startx && wine League of Legends installer EUNE.exe 
 fi
 
 # Make partition
