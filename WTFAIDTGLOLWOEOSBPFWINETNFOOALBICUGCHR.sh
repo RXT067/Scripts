@@ -20,6 +20,7 @@ if [[ ! -b $1 && ! -d $2 && $2 != "/mnt/*" ]] && [[ $(mount | grep -o "$1 on") !
  		fi
  		clear
 
+ 		mkfs.ext4 $1
  		mount $1 $2 && cd $2 
  		wget http://distfiles.gentoo.org/releases/amd64/autobuilds/20190219T214502Z/stage3-amd64-20190219T214502Z.tar.xz && tar -xpf stage3-amd64-20190219T214502Z.tar.xz && rm -r stage3-amd64-20190219T214502Z.tar.xz
 
