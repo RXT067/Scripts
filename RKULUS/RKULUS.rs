@@ -66,24 +66,24 @@ use std::env;
 // // https://doc.rust-lang.org/std/env/index.html
 
 // Global Variables
-static MSG: &'static str = "hello world"; // unsane, used for learning
+static MSG: &'static str = "hello hell"; // unsane, used for learning
+
+println!("something {}", MSG); // Expected to output 'hello hell'.
 
 // TODO: Check what system it's invoked on and what package managers are present
-
-println!("testvar {}", something); // Expected to output 'not_nothing'.
-// Self-made example of output
 
 fn update_gentoo() {
  // Abstract: if gentoo invoke emerge -uDU @world
 	if(Path::new("/etc/portage").exists()){
- 		Command::new("sh")
- 			.arg("-c") // Mandatory?
- 			println!("Updating Gentoo..");
- 			//.arg("emerge -uDU @world") // Expected to update system.
- 			.arg("emerge -uDUp @world") // Using -p which will pretend and won't write changes for test.
- 			.output() // wut?
- 			.expect("FATAL: Failed to execute process..")
- 	} else {
- 		println!("FATAL: Gentoo statement is not true..");
- 	};
+		Command::new("sh")
+			.arg("-c") // Mandatory?
+			println!("Updating Gentoo..");
+			//.arg("emerge -uDU @world") // Expected to update system.
+			.arg("emerge -uDUp @world") // Using -p which will pretend and won't write changes for test.
+			.output() // wut?
+			.expect("FATAL: Failed to execute process..")
+	} else {
+		println!("INFO: Gentoo statement is not true..");
+		// Use assert! if program is expected to terminate
+	};
 }
