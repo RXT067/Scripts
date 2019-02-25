@@ -39,6 +39,10 @@
 /// <kreyren> noted
 /// <01> eval: static MSG: &'static str = "hello world"; MSG
 /// -eval/#rust-beginners- "hello world"
+/// <01> it defines a static varaible named MSG with the type &'static str pointing to a string in data memory
+/// <01> 99.9% of rust problems can be solved without globals
+/// * 01 has used them … once
+/// <01> okay. I didn't write 1000 programs so far
 
 // References 
 // / Video Sources
@@ -61,9 +65,8 @@ use std::env;
 // / To greb environment variables
 // // https://doc.rust-lang.org/std/env/index.html
 
-// Variables
-// Self-made example
-// static MSG: &'static str = "hello world"; // unsane
+// Global Variables
+static MSG: &'static str = "hello world"; // unsane, used for learning
 
 // TODO: Check what system it's invoked on and what package managers are present
 
