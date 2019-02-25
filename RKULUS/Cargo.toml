@@ -1,0 +1,6 @@
+[package]
+name = "RKULUS"
+version = "0.0.0"
+authors = ["Jacob Hrbek <werifgx@gmail.com>"]
+
+[dependencies]
