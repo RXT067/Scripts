@@ -48,6 +48,7 @@
 // / Video Sources
 // // Source https://youtu.be/U1EFgCNLDB8
 // // Source https://www.youtube.com/watch?v=KLMtnA2mGKs
+// // Source https://www.youtube.com/watch?v=zF34dRivLOw
 // / Linux Variables in Rust
 // // https://doc.rust-lang.org/std/env/index.html
 
@@ -65,25 +66,55 @@ use std::env;
 // / To greb environment variables
 // // https://doc.rust-lang.org/std/env/index.html
 
-// Global Variables
-static MSG: &'static str = "hello hell"; // unsane, used for learning
+// use std::io::stdout
+// / Required for println! to write output in terminal?
+// // https://doc.rust-lang.org/std/macro.println.html
 
-println!("something {}", MSG); // Expected to output 'hello hell'.
+use std::process::Output
+
+
+// Global Variables
+// static MSG: &'static str = "hello hell"; // unsane, used for learning
+// Output?
+// println!("something {}", MSG); // Expected to output 'hello hell'.
+// // Fails to build because it's not part of the function?
+//
+// error: expected one of `::`, `;`, or `as`, found `println`
+//  --> RKULUS.rs:76:1
+//   |
+// 69 | use std::io::stdout
+//    |                    - expected one of `::`, `;`, or `as` here
+// ...
+// 76 | println!("something {}", MSG); // Expected to output 'hello hell'.
+//    | ^^^^^^^ unexpected token
+
+// NOTE: Documentation comments can not be used under `use` (?)
+//  error: expected one of `::`, `;`, or `as`, found `/// Global Variables`
+//   --> RKULUS.rs:76:1
+//    |
+// 73 | use std::process::Output
+//    |                         - expected one of `::`, `;`, or `as` here
+// ...
+// 76 | /// Global Variables
+//    | ^^^^^^^^^^^^^^^^^^^^ unexpected token
+
+
 
 // TODO: Check what system it's invoked on and what package managers are present
 
-fn update_gentoo() {
- // Abstract: if gentoo invoke emerge -uDU @world
+fn main() {
+ // Abstract: if gentoo is detected invoke emerge -uDU @world
 	if(Path::new("/etc/portage").exists()){
 		Command::new("sh")
 			.arg("-c") // Mandatory?
-			println!("Updating Gentoo..");
+			// println!("Updating Gentoo..");
+			// / results in unexpected token?
 			//.arg("emerge -uDU @world") // Expected to update system.
 			.arg("emerge -uDUp @world") // Using -p which will pretend and won't write changes for test.
 			.output() // wut?
 			.expect("FATAL: Failed to execute process..")
 	} else {
 		println!("INFO: Gentoo statement is not true..");
-		// Use assert! if program is expected to terminate
+		// Use `assert!` if program is expected to terminate
 	};
 }
