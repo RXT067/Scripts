@@ -1,0 +1,8 @@
+[package]
+name = "LEARNING_RUST"
+version = "0.1.0"
+authors = ["Jacob Hrbek <werifgx@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+nix = "0.13.0"
