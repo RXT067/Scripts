@@ -1,6 +1,12 @@
 pub fn run() {
-    use nix::unistd::getuid;
-    let uid = getuid();
 
-    println!("UID: {}", uid);
+    use nix::unistd::getuid;
+
+        impl Uid {
+            if is_root() {
+            }
+        }
+
+// PLEASE LET ME DIE
+
 }
