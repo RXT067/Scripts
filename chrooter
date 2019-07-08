@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Abstract: CHange ROOT into desired directory (chrooter).
+# Created by github.com/kreyren under GNUv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+
+# NOT PRODUCTION READY
+
+# Error handling
+## 0 = False
+## 1 = True
+## 2 = Syntax Error
+if ! command -v info > /dev/null; then	info()	{	printf "INFO: %s\n" "$1"	1>&2	;	} fi
+if ! command -v warn > /dev/null; then	warn()	{	printf "WARN: %s\n" "$1"	1>&2	;	} fi
+if ! command -v die > /dev/null; then	die()	{	printf "FATAL: %s\n" "$2"	1>&2	;	exit "$1"	;	}	fi
+
+# FUNTIONS
+checkroot () { # Check if executed as root, if not tries to use sudo
+	if ! ((EUID)); then
+		return
+	elif [[ -x "$(command -v sudo)" ]] && [ -n "$KREYREN_CHECKROOT" ]; then
+			info "Failed to aquire root permission, trying reinvoking with 'sudo' prefix"
+			exec sudo "$0" "$@"
+			exit 1
+	elif [[ ! -x "$(command -v sudo)" ]] && [ -n "$KREYREN_CHECKROOT" ]; then
+		info "Failed to aquire root permission, trying reinvoking as root user."
+		exec su -c "$0 $*"
+		exit 1
+	else
+		die 0 "Unable to elevate root access."
+	fi
+}
+
+sanitize_mount_directory() { # Sanitization for Mount Directory variable
+	[ -z "$1" ] && die 2 "Function ${FUNCNAME[0]} expects argument with path to mount directory which is not provided"
+	[ ! -d "$1" ] && die "First argument ($1) of function ${FUNCNAME[0]} is not a valid directory"
+	[[ "$1" != /mnt/* ]] && warn "Mount directories should be mounted in /mnt directory not $1" # TODO: regex first directory if possible
+	[ ! -e "${1}/etc" ] && [ -z "$forced" ] && die "Unable to find /etc directory in $1 directory, assuming invalid mount directory, use --force to override if needed."
+}
+
+mount_required_fs() { # Mount required filesystems
+	## Sanitization - Expecting 1="/mnt/something"
+	sanitize_mount_directory "$1"
+	## Action
+	if ! grep -qF "${1}/dev" /proc/mounts;	then (mount --rbind /dev "${1}/dev/" && mount --make-rslave "${1}/dev") || die 0 "Unable to mount /dev to $1/dev as rbind which is required";	fi
+	if ! grep -qF "${1}/dev" /proc/mounts;	then mount --bind /sys "${1}/sys/" || die 0 "Unable to mount /sys to $1/sys as bind which is required";	fi
+	if ! grep -qF "${1}/tmp" /proc/mounts;	then (mount --rbind /tmp "${1}/tmp" && mount --make-rslave "${1}/tmp") || die 0 "Unable to mount /tmp to $1/tmp as rbind which is required";	fi
+	if grep -qF "${1}/proc" /proc/mounts;	then mount --types proc none "${1}/proc/" || die 0 "Unable to mount proc on none which is required"; fi
+}
+
+chroot_in() { # Perform chroot
+	## Sanitization - Expecting 1="/mnt/something"
+	sanitize_mount_directory "$1"
+	## Action
+	(chroot "$1" mount -a && info "filesystems has been mounted on $1") || warn "Unable to mount all filesystems on $1"
+	if [ -n "$2" ]; then
+		(chroot "$1" "$2" && return ; exit 1) || die 0 "Unable to Change root from $1 to $2"
+	elif [ -z "$2" ]; then
+		(chroot "$1" /bin/bash && return ; exit 1) || die 0 "Unable to Change root from $1 to /bin/bash"
+	fi
+}
+
+kill_chroot() { # Take down chroot
+	## Sanitization - Expecting 1="/mnt/something"
+	sanitize_mount_directory "$1"
+	[ "$(mount | grep -o "$1" -m '1')" == "$1" ] &&
+	if ! grep -qF "$1" /proc/mounts; then (warn "Function ${FUNCNAME[0]} was unable to detect mounted $1, skipping.." && return) fi
+	## Action
+	umount -R "$1" || die 0 "Unable to umount $1"
+}
+
+# CODE
+checkroot "$@"
+
+while [[ "$#" -gt 0 ]]; do case "$1" in
+	-f|--force) forced="KREYREN"; shitf;;
+	-K|--kill) kill_chroot "$2"; exit 1;;
+	*)
+		mount_required_fs "$1"
+		chroot_in "$1" "$2"
+		shift
+esac; done
