@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Krey's Cool Way To Use QEMU (KCWTUQEMU) - QEMUren for short
+# Ensure that kernel is bootable
+# Created by Jacob Hrbek in 2019 under terms and conditions of GNUv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+
+# ABSTRACT
+## Open virtual machine environment in QEMU for provided kernel and userland
+##X Check if qemu is present
+
+# Relevant: http://ncmiller.github.io/2016/05/14/linux-and-qemu.html
+# Relevant: For nographic mode
+## it depends how your kernel manages consoles for this machine, you are using a x86 machine so ttyS0 might work
+## should do as long as serial console is compiled in
+## TODO: Set `-m` variable for qemu depending on the size of initramfs
+
+# Error handling
+# 0 - False
+# 1 - True
+# 3 - Root access
+if ! command -v 'info' > /dev/null; then	info()	{	printf "INFO: %s\n" "$1"	1>&2	;	} fi
+if ! command -v 'warn' > /dev/null; then	warn()	{	printf "WARN: %s\n" "$1"	1>&2	;	} fi
+if ! command -v 'die' > /dev/null; then	die()	{	printf "FATAL: %s\n" "$2"	1>&2	;	exit "$1"	;	}	fi
+
+# Check if qemu is available
+[ ! -x $(command -v 'qemu-system-x86_64') ] && die "Command 'qemu-system-x86_64' is not executable from current environment"
+
+# Check if executed as root, if not tries to use sudo unless checkroot is already defined
+if ! command -v checkroot > /dev/null; then checkroot () {
+	if ! ((EUID)); then
+		return
+	elif [[ -x "$(command -v sudo)" ]] && [ -n "$KREYREN_CHECKROOT" ]; then
+			info "Failed to aquire root permission, trying reinvoking with 'sudo' prefix"
+			exec sudo "$0" "$@" || die 3 "Unable to elevate root access"
+			exit 1
+	elif [[ ! -x "$(command -v sudo)" ]] && [ -n "$KREYREN_CHECKROOT" ]; then
+		info "Failed to aquire root permission, trying reinvoking as root user."
+		exec su -c "$0 $*" || die 3 "Unable to elevate root access"
+		exit 1
+	else
+		die 3 "Unable to elevate root access"
+	fi
+} fi
+
+# CODE
+checkroot "$@"
+
+# Core function
+## TODO: Fix initrd
+## TODO: Fix snapshot
+## TODO: Sanity fore append
+## TODO: Sanity for nographic mode since sometimes it results in blank output
+## TODO: Fix snapshot
+sudo qemu-system-x86_64 \
+	-kernel "/mnt/gentoo/usr/src/linux/arch/$(uname -m)/boot/bzImage" \
+	-initrd '/mnt/gentoo/boot/initramfs-5.3.0-rc1.img' \
+	-m '512' \
+	-enable-kvm \
+	-cpu 'host' \
+	-snapshot '/dev/sda' \
+	-append 'console=ttyS0 root=/dev/sda6 rootfstype=btrfs' \
+	-nographic \
+|| die 0 "STUB: QEMU failed" # Improve err msg
