@@ -58,5 +58,4 @@ sudo qemu-system-x86_64 \
 	-cpu 'host' \
 	-snapshot '/dev/sda' \
 	-append 'console=ttyS0 root=/dev/sda6 rootfstype=btrfs' \
-	-nographic \
 || die 0 "STUB: QEMU failed" # Improve err msg
