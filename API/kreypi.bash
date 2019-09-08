@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
+# Kreypi (Krey's API) for bash
 # Created by github.com/kreyren under the terms of GPL-2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-# This is API of functions for bash made by kreyren (kreypi, because i'm narcistic and this way i don't have to spent time thinking about naming)
-
-# Error/output handling
+## Output manipulation
 if ! command -v "einfo" > /dev/null; then	einfo()	{	printf "INFO: %s\n" "$1"	1>&2	;	} fi
 if ! command -v "warn" > /dev/null; then	warn()	{	printf "WARN: %s\n" "$1"	1>&2	;	} fi
 if [ -n "$debug" ]; then
@@ -38,33 +37,37 @@ if ! command -v "die" > /dev/null; then	die()	{
 	esac }
 fi
 
-checkroot() { # Check if executed as root, if not tries to use sudo if KREYREN variable is not blank
-  # Licenced by github.com/kreyren under GPL-2
-	if [[ "$EUID" == '0' ]]; then
-		return
-	elif [[ -x "$(command -v "sudo")" ]] && [ -n "$KREYREN" ]; then
-			einfo "Failed to aquire root permission, trying reinvoking with 'sudo' prefix"
-			sudo "$0" "$@" && edebug "Script has been executed with 'sudo' prefix" || die 3
-			die 0
-	elif [[ ! -x "$(command -v "sudo")" ]] && [ -n "$KREYREN" ]; then
-		einfo "Failed to aquire root permission, trying reinvoking as root user."
-		exec su -c "$0 $*" && edebug "Script has been executed with 'su' prefix" || die 3
-		die 0
-	else
-		die 3
-	fi
+
+
+# HELPER: Output public IP
+## WIP
+myip() {
+	# Fetch IP from hostname
+	if command -v "hostname" >/dev/null; then hostname -I 2>/dev/null && return 0; fi
+
+	# Fetch IP from remote server
+	if command -v "curl" >/dev/null; then curl 'ifconfig.me' 2>/dev/null && return 0; fi
 }
 
+
+
+# Sanitized git-clone
+egit-clone() {
+	# SYNOPSIS: $0 [repository] [path]
+
+	# Sanitization
+	if ! command -v "git" >/dev/null; then die 1 "command 'git' is not executable"; fi
+	## Sanitization for $1
+	[[ "$1" != https://*.git ]] && die 1 "${FUNCNAME[0]}: Argument '$1' doesn't match 'https://*.git'"
+	# TODO: Sanitize $2
+
+	[ ! -d "$2" ] && (git clone "$1" "$2" && edebug "${FUNCNAME[0]}: cloned '$1' in '$2'" || die 1 "${FUNCNAME[0]}: Unable to clone '$1' in '$2'") || edebug "${FUNCNAME[0]}: Directory '$2' already exists for '$1', skipping.."
+}
+
+
+# Sanitized mkdir
 emkdir() {
 	# SYNOPSIS: command [pathname] [permission] (user) (group)
-  ## [] = mandatory ; () = optional
-  # Licenced by github.com/kreyren under GPL-2
-	# ABSTRACT
-	## - Check if directory is present; if not -> make it
-	## - Check if directory has expected permission; if not -> fix it
-	## - Check if directory is owned by expected group and user; if no -> fix it
-	## - Output debug for each action
-	## - Never use parents argument for mkdir (do not make unexpected directories)
 
 	## Create a file
 	[ -f "$1" ] && die "Attempting to make directory in pathname of file"
@@ -81,6 +84,25 @@ emkdir() {
 		fi
 	elif [ -z "$3" ] && [ -z "$4" ]; then
 		edebug "Third and Forth arguments are not set for $1, skipping.."
-	else die "Unexpected die in ${FUNCNAME[0]}"
+	else die wtf
+	fi
+}
+
+
+# Checkroot
+checkroot() { # Check if executed as root, if not tries to use sudo if KREYREN variable is not blank
+  # Licenced by github.com/kreyren under GPL-2
+	if [[ "$EUID" == '0' ]]; then
+		return
+	elif [[ -x "$(command -v "sudo")" ]] && [ -n "$KREYREN" ]; then
+			einfo "Failed to aquire root permission, trying reinvoking with 'sudo' prefix"
+			sudo "$0" "$@" && edebug "Script has been executed with 'sudo' prefix" || die 3
+			die 0
+	elif [[ ! -x "$(command -v "sudo")" ]] && [ -n "$KREYREN" ]; then
+		einfo "Failed to aquire root permission, trying reinvoking as root user."
+		exec su -c "$0 $*" && edebug "Script has been executed with 'su' prefix" || die 3
+		die 0
+	else
+		die 3
 	fi
 }
