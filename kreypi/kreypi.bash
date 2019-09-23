@@ -94,3 +94,6 @@ checkroot() { # Check if executed as root, if not tries to use sudo if KREYREN v
 		die 3
 	fi
 }
+
+# Check executable
+e_check_exec() { if ! command -v "$1" >/dev/null; then w_die "Command \'$1\' is not executable" ; }
