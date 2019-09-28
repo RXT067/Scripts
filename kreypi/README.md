@@ -21,3 +21,4 @@ elif [ ! -e "/lib/bash/kreypi.bash" ]; then
 	printf "FATAL: Unable to source '/lib/bash/kreypi.bash' since path doesn't exists\n"
 fi
 ```
+.
