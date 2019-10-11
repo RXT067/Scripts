@@ -10,6 +10,7 @@ if ! command -v "debug" > /dev/null; then debug()	{	[ -n "$debug" ] && { printf 
 
 # SYNOPSIS: $0 [error_code [num:0~255]] (message)
 ## TODO: Add debug msg option
+# http://tldp.org/LDP/abs/html/exitcodes.html#EXITCODESREF
 if ! command -v "die" > /dev/null; then	die()	{
 
 	# shellcompat
@@ -36,8 +37,14 @@ if ! command -v "die" > /dev/null; then	die()	{
 			else die 'wtf'
 			fi
 		;;
+		126) # Not executable
+			die 126 "FIXME(die): Not executable"
+		;;
+		130) # Killed by user
+			die 130 "Killed by user"
+		;;
 		# Custom
-    wtf) printf "FATAL: Unexpected result in (%s)\n" "$2" ; exit 1 ;;
+    wtf|255) printf "FATAL: Unexpected result in (%s)\n" "$2" ; exit 255 ;;
     ping) printf "Killed by ping\n" ; exit 1 ;;
 		*)	(printf "FATAL: %s\n" "$1" 1>&2 ; exit 1)
 	esac
