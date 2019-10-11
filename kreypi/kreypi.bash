@@ -3,10 +3,10 @@
 # Created by github.com/kreyren under the terms of GPL-2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 ## Output manipulation
-if ! command -v "info" > /dev/null; then	info()	{	printf "INFO: %s\n" "$1"	1>&2	;} fi
+if ! command -v "info" > /dev/null; then	einfo()	{	printf "INFO: %s\n" "$1"	1>&2	;} fi
 if ! command -v "warn" > /dev/null; then	warn()	{	printf "WARN: %s\n" "$1"	1>&2	;} fi
 # shellcheck disable=SC2154
-if ! command -v "debug" > /dev/null; then debug()	{	[ -n "$debug" ] && printf "DEBUG: %s\n" "$1" 1>&2 ;} fi
+if ! command -v "debug" > /dev/null; then debug()	{	[ -n "$debug" ] && { printf "DEBUG: %s\n" "$1" 1>&2 ;} || true ;} fi
 
 # SYNOPSIS: $0 [error_code [num:0~255]] (message)
 ## TODO: Add debug msg option
@@ -73,7 +73,7 @@ egit-clone() {
 	[[ "$1" != https://*.git ]] && die 1 "${FUNCNAME[0]}: Argument '$1' doesn't match 'https://*.git'"
 	# TODO: Sanitize $2
 
-	[ ! -d "$2" ] && { git clone "$1" "$2" && debug "${FUNCNAME[0]}: cloned '$1' in '$2'" || die 1 "${FUNCNAME[0]}: Unable to clone '$1' in '$2'" ;} || debug "${FUNCNAME[0]}: Directory '$2' already exists for '$1', skipping.."
+	[ ! -d "$2" ] && { git clone "$1" "$2" && { debug "${FUNCNAME[0]}: cloned '$1' in '$2'" ; true ;} || die 1 "${FUNCNAME[0]}: Unable to clone '$1' in '$2'" ;} || debug "${FUNCNAME[0]}: Directory '$2' already exists for '$1', skipping.."
 }
 
 # Sanitized mkdir
@@ -141,4 +141,4 @@ checkroot() { # Check if executed as root, if not tries to use sudo if KREYREN v
 }
 
 # Check executable
-e_check_exec() { if ! command -v "$1" >/dev/null; then die "Command '$1' is not executable"; fi ;}
+e_check_exec() { if ! command -v "$1" >/dev/null; then info "Command '$1' is not executable" && return 1; fi ;}
