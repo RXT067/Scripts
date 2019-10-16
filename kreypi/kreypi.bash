@@ -3,22 +3,22 @@
 # Created by github.com/kreyren under the terms of GPL-2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 ## Output manipulation
-if ! command -v "info" > /dev/null; then	einfo()	{	printf "INFO: %s\n" "$1"	1>&2	;} fi
-if ! command -v "warn" > /dev/null; then	warn()	{	printf "WARN: %s\n" "$1"	1>&2	;} fi
+if ! command -v "einfo" >/dev/null; then einfo() { printf "INFO: %s\n" "$1" 1>&2 ;} fi
+if ! command -v "warn" >/dev/null; then warn() { printf "WARN: %s\n" "$1" 1>&2 ;} fi
 # shellcheck disable=SC2154
-if ! command -v "debug" > /dev/null; then debug()	{	[ -n "$debug" ] && { printf "DEBUG: %s\n" "$1" 1>&2 ;} || true ;} fi
+if ! command -v "debug" >/dev/null; then debug() { [ -n "$debug" ] && { printf "DEBUG: %s\n" "$1" 1>&2 ;} || true ;} fi
 
 # SYNOPSIS: $0 [error_code [num:0~255]] (message)
 ## TODO: Add debug msg option
 # http://tldp.org/LDP/abs/html/exitcodes.html#EXITCODESREF
-if ! command -v "die" > /dev/null; then	die()	{
+if ! command -v "die" >/dev/null; then	die()	{
 
 	# shellcompat
 	# shellcheck disable=SC2178
 	[ -z "${FUNCNAME[0]}" ] && local FUNCNAME="die"
 
 	case "$1" in
-		0|true)	debug "Script returned true" ; exit 0 ;;
+		0|true)	debug "Script returned true" ; return 0 ;;
 		1|false) # False
 			if [ -n "$2" ]; then printf 'FATAL: %s\n' "$2" 1>&2 ; exit 1
 			elif [ -z "$2" ]; then printf "FATAL: Script returned false $([ -n "$EUID" ] && printf "from EUID ($EUID)") ${FUNCNAME[0]}\n" 1>&2 ; exit 1
@@ -44,8 +44,8 @@ if ! command -v "die" > /dev/null; then	die()	{
 			die 130 "Killed by user"
 		;;
 		# Custom
-    wtf|255) printf "FATAL: Unexpected result in (%s)\n" "$2" ; exit 255 ;;
-    ping) printf "Killed by ping\n" ; exit 1 ;;
+    wtf|255) printf '%s\n' "FATAL: Unexpected result in '$2'"; exit 255 ;;
+    ping) printf '%s\n' "Killed by ping\n" ; exit 1 ;;
 		*)	(printf "FATAL: %s\n" "$1" 1>&2 ; exit 1)
 	esac
 }
@@ -55,7 +55,7 @@ fi
 # Synopsis: $0 [y/n]
 shellcompat() {
 	case "$1" in
-		yes|y)
+		yes|y|"")
 			debug 'Shell compatibility is enabled'
 			# shellcheck disable=SC2178
 			[ -z "${FUNCNAME[0]}" ] && export FUNCNAME="(execute in bash to get function name)"
@@ -72,7 +72,7 @@ egit-clone() {
 
 	# shellcompat
 	# shellcheck disable=SC2178
-	[ -z "${FUNCNAME[0]}" ] && local FUNCNAME="egit_clone"
+	[ -z "${FUNCNAME[0]}" ] && FUNCNAME="egit_clone"
 
 	# Sanitization
 	if ! command -v "git" >/dev/null; then die 1 "command 'git' is not executable"; fi
@@ -90,7 +90,7 @@ emkdir() {
 
 	# shellcompat
 	# shellcheck disable=SC2178
-	[ -z "${FUNCNAME[0]}" ] && local FUNCNAME="emkdir"
+	[ -z "${FUNCNAME[0]}" ] && FUNCNAME="emkdir"
 
 	## Create a file
 	[ -f "$1" ] && die 1 "Attempting to make DIRECTORY in pathname of FILE"
@@ -131,21 +131,28 @@ emkdir() {
 
 # Checkroot
 checkroot() { # Check if executed as root, if not tries to use sudo if KREYREN variable is not blank
-  # Licenced by github.com/kreyren under GPL-2
-	if [[ "$EUID" == '0' ]]; then
-		return
-	elif [[ -x "$(command -v "sudo")" ]] && [ -n "$KREYREN" ]; then
-			info "Failed to aquire root permission, trying reinvoking with 'sudo' prefix"
-			sudo "$0" "$@" && { debug "Script has been executed with 'sudo' prefix" ;} || die 3
-			die 0
-	elif [[ ! -x "$(command -v "sudo")" ]] && [ -n "$KREYREN" ]; then
-		info "Failed to aquire root permission, trying reinvoking as root user."
-		exec su -c "$0 $*" && { debug "Script has been executed with 'su' prefix" ;} || die 3
-		die 0
-	else
+	if [ "$EUID" = 0 ]; then
+		return 0
+	elif command -v sudo >/dev/null && [ -n "$KREYREN" ] && [ -n "$EUID" ]; then
+		einfo "Failed to aquire root permission, trying reinvoking with 'sudo' prefix"
+		sudo "$0" "$@" && { debug "Script has been executed with 'sudo' prefix" ;}
+		die wtf
+	elif ! command -v sudo >/dev/null && [ -n "$KREYREN" ] && [ -n "$EUID" ]; then
+		einfo "Failed to aquire root permission, trying reinvoking as root user."
+		exec su -c "$0 $*" && { debug "Script has been executed with 'su' prefix" ;}
+		die wtf
+	elif [ "$EUID" != 0 ]; then
+		einfo "EUID - $EUID"
 		die 3
+	else
+		die wtf
 	fi
 }
 
+# kreyren@dreamon:~$ sudo /home/kreyren/bin/chrooter /mnt/exherbo/
+# + sudo /home/kreyren/bin/chrooter /mnt/exherbo/
+# INFO: EUID - 0
+# FATAL: Unable to elevate root access from EUID (0)
+
 # Check executable
-e_check_exec() { if ! command -v "$1" >/dev/null; then info "Command '$1' is not executable" && return 1; fi ;}
+e_check_exec() { if ! command -v "$1" >/dev/null; then einfo "Command '$1' is not executable" && return 1; fi ;}
