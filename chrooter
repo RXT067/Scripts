@@ -1,68 +1,75 @@
 #!/usr/bin/env bash
 # Abstract: CHange ROOT into desired directory (chrooter).
-# Created by github.com/kreyren under GNUv2 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+# Created by github.com/kreyren under GNUv3 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-# NOT PRODUCTION READY
+### START OF KREYPI INIT ###
+# https://github.com/RXT067/Scripts/tree/kreyren/kreypi
 
-# Error handling
-## 0 = False
-## 1 = True
-## 2 = Syntax Error
-if ! command -v info > /dev/null; then	info()	{	printf "INFO: %s\n" "$1"	1>&2	;	} fi
-if ! command -v warn > /dev/null; then	warn()	{	printf "WARN: %s\n" "$1"	1>&2	;	} fi
-if ! command -v die > /dev/null; then	die()	{	printf "FATAL: %s\n" "$2"	1>&2	;	exit "$1"	;	}	fi
+# Sanitycheck for fetch
+if ! command -v 'wget' >/dev/null && [ ! -e "/lib/bash/kreypi.bash" ]; then printf "FATAL: This script requires 'wget' to be executable for downloading of kreypi (https://github.com/RXT067/Scripts/tree/kreyren/kreypi) for further sourcing\n" ; exit 1 ; fi
 
-# FUNTIONS
-checkroot () { # Check if executed as root, if not tries to use sudo
-	if ! ((EUID)); then
-		return
-	elif [[ -x "$(command -v sudo)" ]] && [ -n "$KREYREN_CHECKROOT" ]; then
-			info "Failed to aquire root permission, trying reinvoking with 'sudo' prefix"
-			exec sudo "$0" "$@"
-			exit 1
-	elif [[ ! -x "$(command -v sudo)" ]] && [ -n "$KREYREN_CHECKROOT" ]; then
-		info "Failed to aquire root permission, trying reinvoking as root user."
-		exec su -c "$0 $*"
-		exit 1
-	else
-		die 0 "Unable to elevate root access."
-	fi
-}
+# Sanitycheck for /lib/bash
+# shellcheck disable=SC2154
+[ ! -e "/lib/bash" ] && { mkdir -p "/lib/bash" || printf "ERROR: Unable to make a new directory in /lib/bash\n" ; exit 1 ;} || { [ -n "$debug" ] && printf "DEBUG: Directory in '/lib/bash' already exists\n" ;}
+
+# Fetch
+[ ! -e "/lib/bash/kreypi.bash" ] && { wget 'https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.bash' -O '/lib/bash/kreypi.bash' || printf '%s\n' "Unable to download kreypi from 'https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.bash' -O '/lib/bash/kreypi.bash' in '/lib/bash/kreypi.bash'" ; exit 1 ;} || [ -n "$debug" ] && printf "DEBUG: File '/lib/bash/kreypi.bash' already exists\n"
+
+# Source
+if [ -e "/lib/bash/kreypi.bash" ]; then
+	# 'source' can not be used on POSIX sh
+	. "/lib/bash/kreypi.bash" || { printf "FATAL: Unable to source '/lib/bash/kreypi.bash'\n" ; exit 1 ;}
+  [ -n "$debug" ] && printf "DEBUG: Kreypi in '/lib/bash/kreypi.bash' has been successfully sourced\n"
+elif [ ! -e "/lib/bash/kreypi.bash" ]; then
+	printf "FATAL: Unable to source '/lib/bash/kreypi.bash' since path doesn't exists\n"
+fi
+
+### END OF KREYPI INIT ###
+
+# Export shell-compatibility
+shellcompat
 
 sanitize_mount_directory() { # Sanitization for Mount Directory variable
 	[ -z "$1" ] && die 2 "Function ${FUNCNAME[0]} expects argument with path to mount directory which is not provided"
 	[ ! -d "$1" ] && die "First argument ($1) of function ${FUNCNAME[0]} is not a valid directory"
-	[[ "$1" != /mnt/* ]] && warn "Mount directories should be mounted in /mnt directory not $1" # TODO: regex first directory if possible
-	[ ! -e "${1}/etc" ] && [ -z "$forced" ] && die "Unable to find /etc directory in $1 directory, assuming invalid mount directory, use --force to override if needed."
+	case "$1" in '/mnt/*') warn "Mount directories should be mounted in /mnt directory not $1"; esac
+	[ ! -e "$1/etc" ] && [ -z "$forced" ] && die 1 "Unable to find /etc directory in $1 directory, assuming invalid mount directory, use --force to override if needed."
 }
 
-mount_required_fs() { # Mount required filesystems
+mount_required_fs() { # Mount required filesystems for chrooting
 	## Sanitization - Expecting 1="/mnt/something"
 	sanitize_mount_directory "$1"
 	## Action
-	if ! grep -qF "${1}/dev" /proc/mounts;	then (mount --rbind /dev "${1}/dev/" && mount --make-rslave "${1}/dev") || die 0 "Unable to mount /dev to $1/dev as rbind which is required";	fi
-	if ! grep -qF "${1}/dev" /proc/mounts;	then mount --bind /sys "${1}/sys/" || die 0 "Unable to mount /sys to $1/sys as bind which is required";	fi
-	if ! grep -qF "${1}/tmp" /proc/mounts;	then (mount --rbind /tmp "${1}/tmp" && mount --make-rslave "${1}/tmp") || die 0 "Unable to mount /tmp to $1/tmp as rbind which is required";	fi
-	if grep -qF "${1}/proc" /proc/mounts;	then mount --types proc none "${1}/proc/" || die 0 "Unable to mount proc on none which is required"; fi
+	### Reference: https://wiki.gentoo.org/wiki/Chroot#Configuration
+	### /dev
+	if ! grep -qF "$1/dev" /proc/mounts; then { mount --rbind /dev "$1/dev/" || die 1 "Unable to mount '/dev' as rbind on '$1/dev'" ;} && { mount --make-rslave "$1/dev" || die 1 "Unable to mount '/dev' as '-make-rslave' on '$1/dev'" ;}; fi
+	### /sys
+	if ! grep -qF "$1/sys" /proc/mounts; then { mount --bind /sys "$1/sys/" || die 0 "Unable to mount '/sys' to '$1/sys' as bind which is required" ;}; fi
+	### /tmp
+	if ! grep -qF "$1/tmp" /proc/mounts; then { mount --rbind /tmp "$1/tmp" || die 1 "Unable to mount '$1/tmp' as '--bind' on '/tmp'";} && { mount --make-rslave "$1/tmp" || die 0 "Unable to mount '/tmp' to '$1/tmp' as '--make-rbind' which is required";}; fi
+	### /proc
+	#if ! grep -qF "$1/proc" /proc/mounts;	then { mount --types proc none "$1/proc/" || die 0 "Unable to mount '/proc' on 'none' which is required";}; fi
+	# HOTFIX, fuck everything
+	mount --types proc none "$1/proc/" 2>/dev/null
 }
 
-chroot_in() { # Perform chroot
+chrooter() { # Perform chroot
 	## Sanitization - Expecting 1="/mnt/something"
 	sanitize_mount_directory "$1"
 	## Action
-	(chroot "$1" mount -a && info "filesystems has been mounted on $1") || warn "Unable to mount all filesystems on $1"
-	if [ -n "$2" ]; then
-		(chroot "$1" "$2" && return ; exit 1) || die 0 "Unable to Change root from $1 to $2"
-	elif [ -z "$2" ]; then
-		(chroot "$1" /bin/bash && return ; exit 1) || die 0 "Unable to Change root from $1 to /bin/bash"
+	### Mount everything in chroot
+	{ chroot "$1" mount -a && info "filesystems has been mounted on $1" ;} || warn "Unable to mount all filesystems on $1"
+	### Perform chroot
+	if [ -n "$2" ]; then { chroot "$1" "$2" || die 0 "Unable to Change root from $1 to $2" ;}
+	elif [ -z "$2" ]; then { chroot "$1" /bin/bash || die 0 "Unable to Change root from $1 to /bin/bash";}
 	fi
 }
 
-kill_chroot() { # Take down chroot
+kill_chrooter() { # Take down chroot
 	## Sanitization - Expecting 1="/mnt/something"
 	sanitize_mount_directory "$1"
-	[ "$(mount | grep -o "$1" -m '1')" == "$1" ] &&
-	if ! grep -qF "$1" /proc/mounts; then (warn "Function ${FUNCNAME[0]} was unable to detect mounted $1, skipping.." && return) fi
+	[ "$(mount | grep -o "$1" -m '1')" == "$1" ] && warn "FIXME: Unable to kill chroot on runtime (/dev preventing umount)"
+	if ! grep -qF "$1" /proc/mounts; then { warn "Function ${FUNCNAME[0]} was unable to detect mounted $1, skipping.." && return ;} fi
 	## Action
 	umount -R "$1" || die 0 "Unable to umount $1"
 }
@@ -70,11 +77,14 @@ kill_chroot() { # Take down chroot
 # CODE
 checkroot "$@"
 
-while [[ "$#" -gt 0 ]]; do case "$1" in
-	-f|--force) forced="KREYREN"; shitf;;
-	-K|--kill) kill_chroot "$2"; exit 1;;
-	*)
+while [ "$#" -gt 0 ]; do case "$1" in
+	-f|--force) export forced="KREYREN"; shitf 1 ;;
+	-K|--kill) kill_chrooter "$2" ;;
+	/*) # TODO: Sanitize for path
 		mount_required_fs "$1"
-		chroot_in "$1" "$2"
-		shift
+		chrooter "$1" "$2"
+		[ -n "$2" ] && shift 1
+		shift 1
+	;;
+	*) die 1 "Unrecognized argument '$1' was parsed"
 esac; done
