@@ -11,21 +11,26 @@
 if [ "$(id -u)" != 0 ]; then
 	printf 'FATAL: %s\n' "This script is using KREYPI library which needs to be exported in /lib/shell using root permission"
 	exit 3
-elif [ "$(id -u)" != 0 ]; then
+elif [ "$(id -u)" = 0 ]; then
 	# shellcheck disable=SC2154
 	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Script executed from an user with ID $(id -u)"
 else
 	printf 'FATAL: %s\n' "Unexpected happend in KREYPI_INIT for checking root"
+	exit 255
 fi
 
 # Create a new directory for shell libraries if not present already
-if [ ! -e /lib/shell ] && [ ! -f /lib/shell ]; then
+if [ ! -e /lib/shell ]; then
 	mkdir /lib/shell || { printf 'FATAL: %s\n' "Unable to make a new directory in '/lib/shell', is this non-standard file hierarchy?" ; exit 1 ;}
 elif [ -f /lib/shell ]; then
 	printf 'FATAL: %s\n' "File '/lib/shell' is a file which is unexpected, expecting directory to export kreypi library"
 	exit 1
+elif [ -d /lib/shell ]; then
+	# shellcheck disable=SC2154
+	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Directory '/lib/shell' already exists, no need to make it"
 else
 	printf 'FATAL: %s\n' "Unexpected result in KREYPI_INIT checking for /lib/shell"
+	exit 255
 fi
 
 # Fetch the library
@@ -33,12 +38,12 @@ if [ -e /lib/shell/kreypi.sh ]; then
 	# shellcheck disable=SC2154
 	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Directory in '/lib/shell' already exists, skipping fetch"
 elif command -v wget >/dev/null; then
-	wget https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh -O /lib/shell/kreypi.sh || printf 'FATAL: %s\n' "Unable to fetch kreypi.sh from https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh in /lib/shell/kreypi.sh using wget"
+	wget https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh -O /lib/shell/kreypi.sh || { printf 'FATAL: %s\n' "Unable to fetch kreypi.sh from https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh in /lib/shell/kreypi.sh using wget" ; exit 1;}
 elif command -v curl >/dev/null; then
-	curl https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh -o /lib/shell/kreypi.sh || printf 'FATAL: %s\n' "Unable to fetch kreypi.sh from https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh in /lib/shell/kreypi.sh using curl"
+	curl https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh -o /lib/shell/kreypi.sh || { printf 'FATAL: %s\n' "Unable to fetch kreypi.sh from https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh in /lib/shell/kreypi.sh using curl" ; exit 1 ;}
 else
 	printf 'FATAL: %s\n' "Unable to download kreypi library from 'https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh' in '/lib/shell/kreypi.sh'"
-	exit 1
+	exit 255
 fi
 
 # Sanitycheck for /lib/shell
@@ -50,33 +55,36 @@ elif [ ! -e /lib/shell ]; then
 	exit 1
 else
 	printf 'FATAL: %s\n' "Unexpected happend in sanitycheck for /lib/shell"
+	exit 255
 fi
 
 # Source KREYPI
-if [ -e "/lib/shell/kreypi.bash" ]; then
+if [ -e "/lib/shell/kreypi.sh" ]; then
 	# 'source' can not be used on POSIX sh
 	# shellcheck source="/lib/shell/kreypi.sh"
 	. "/lib/shell/kreypi.sh" || { printf 'FATAL: %s\n' "Unable to source '/lib/shell/kreypi.sh'" ; exit 1 ;}
 	# shellcheck disable=SC2154
 	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Kreypi in '/lib/shell/kreypi.sh' has been successfully sourced"
-elif [ ! -e "/lib/bash/kreypi.sh" ]; then
+elif [ ! -e "/lib/shell/kreypi.sh" ]; then
 	printf 'FATAL: %s\n' "Unable to source '/lib/shell/kreypi.sh' since path does not exists"
+	exit 1
 else
 	printf 'FATAL: %s\n' "Unexpected happend in sourcing KREYPI_INIT"
+	exit 255
 fi
 
 ### END OF KREYPI INIT ###
 
 # Sanitization for Mount Directory variable
 sanitize_mount_directory() {
-		destdir="$1"
+	destdir="$1"
 
 		# Sanity check for destdir
 	if [ -z "$destdir" ]; then
 		die 2 "Function 'sanitize_mount_directory' expects argument with path to mount directory which is not provided"
 
 	elif [ -n "$destdir" ]; then
-		debug "Variable destdir in function 'saniti' is set on '$destdir'"
+		debug "Variable destdir in function 'sanitize_mount_directory' is set on '$destdir'"
 
 		# Check if destdir is valid directory
 		if [ ! -d "$destdir" ]; then
@@ -89,14 +97,16 @@ sanitize_mount_directory() {
 
 		# Enforce FSH-3.0
 		case "$destdir" in
-			/mnt/*) true ;;
+			/mnt/*) debug "Function 'sanitize_mount_directory' - Destdir '$destdir' is valid" ;;
 			*) warn "Mount directories should be mounted in /mnt directory not $destdir"
 		esac
 
 		if [ ! -e "$destdir/etc" ] && [ -z "$forced" ]; then
 			die 1 "Unable to find /etc directory in $destdir directory, assuming invalid mount directory, use --force to override if needed."
 		elif [ ! -e "$destdir/etc" ] && [ -n "$forced" ]; then
-			debug "Directory '$destdir/etc' is not found, but forced is used"
+			warn "Directory '$destdir/etc' is not found, but forced is used"
+		elif [ -e "$destdir/etc" ]; then
+			debug "Directory '$destdir' is valid directory for chroot assuming checking for '$destdir/etc'"
 		else
 			die 255 "sanitize_mount_directory, destdir/etc check"
 		fi
@@ -121,7 +131,7 @@ mount_required_fs() {
 	if ! grep -qF "$destdir/dev" /proc/mounts; then
 		mount --rbind /dev "$destdir/dev/" || die 1 "Unable to mount '/dev' as rbind on '$destdir/dev'"
 		mount --make-rslave "$destdir/dev" || die 1 "Unable to mount '/dev' as '-make-rslave' on '$destdir/dev'"
-	elif ! grep -qF "$destdir/dev" /proc/mounts; then
+	elif grep -qF "$destdir/dev" /proc/mounts; then
 		# FIXME: This may output if --rbind above fails
 		debug "Directory '$destdir/dev' is already mounted"
 	else
@@ -141,7 +151,7 @@ mount_required_fs() {
 	if ! grep -qF "$destdir/tmp" /proc/mounts; then
 		mount --rbind /tmp "$destdir/tmp" || die 1 "Unable to mount '$destdir/tmp' as '--bind' on '/tmp'"
 		mount --make-rslave "$destdir/tmp" || die 1 "Unable to mount '/tmp' to '$destdir/tmp' as '--make-rbind' which is required"
-	elif ! grep -qF "$destdir/tmp" /proc/mounts; then
+	elif grep -qF "$destdir/tmp" /proc/mounts; then
 		# FIXME: This may trigger if --rbind above failed
 		debug "Directory '$destdir/tmp' is already mounted"
 	else
@@ -171,9 +181,9 @@ chrooter() {
 
 	# Perform chroot
 	if [ -n "$command" ]; then
-		chroot "$destdir" "$command" || die 0 "Unable to Change root from '$destdir' with command '$command'"
+		chroot "$destdir" "$command" || die 1 "Unable to Change Root from '$destdir' with command '$command'"
 	elif [ -z "$command" ]; then
-		chroot "$destdir" /bin/bash || die 0 "Unable to Change root from '$destdir' to /bin/bash"
+		chroot "$destdir" /bin/bash || die 1 "Unable to Change Root from '$destdir' to /bin/bash"
 	fi
 
 	unset destdir command
@@ -186,7 +196,7 @@ kill_chrooter() {
 	# Sanitization - Expecting $destdir="/mnt/something"
 	sanitize_mount_directory "$destdir"
 
-	if [ "$(mount | grep -o "$destdir" -m '1')" = "$destdir" ]; then
+	if grep -qF $destdir /proc/mounts; then
 		fixme "Unable to kill chroot on runtime (/dev preventing umount)"
 		umount -R "$destdir" || die 1 "Unable to unmount $destdir"
 	elif ! grep -qF "$destdir" /proc/mounts; then
@@ -200,9 +210,9 @@ kill_chrooter() {
 # CODE
 checkroot "$@"
 
-while [ "$#" -gt 1 ]; do case "$1" in
-	-f|--force) export forced="KREYREN"; shitf 1 ;;
-	-K|--kill) kill_chrooter "$2" ;;
+while [ "$#" -ge 1 ]; do case "$1" in
+	-f|--force) export forced="KREYREN"; shift 1 ;;
+	-K|--kill) kill_chrooter "$2" ; exit 0 ;;
 	/*) # Allow full path only
 		mount_required_fs "$1"
 
