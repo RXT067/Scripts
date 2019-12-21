@@ -8,80 +8,12 @@
 # shellcheck source=kreypi/kreypi.sh
 
 : '
-Export coreutils on target'
+Export coreutils on target
 
-### START OF KREYPI INIT ###
-# https://github.com/RXT067/Scripts/tree/kreyren/kreypi
+This file is used for sourcing'
 
-# Do not make additional functions here since we are going to source a library
-
-# Check for root
-if [ "$(id -u)" != 0 ]; then
-	printf 'FATAL: %s\n' "This script is using KREYPI library which needs to be exported in /lib/shell using root permission"
-	exit 3
-elif [ "$(id -u)" = 0 ]; then
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Script executed from an user with ID $(id -u)"
-else
-	printf 'FATAL: %s\n' "Unexpected happend in KREYPI_INIT for checking root"
-	exit 255
-fi
-
-# Create a new directory for shell libraries if not present already
-if [ ! -e /lib/shell ]; then
-	mkdir /lib/shell || { printf 'FATAL: %s\n' "Unable to make a new directory in '/lib/shell', is this non-standard file hierarchy?" ; exit 1 ;}
-elif [ -f /lib/shell ]; then
-	printf 'FATAL: %s\n' "File '/lib/shell' is a file which is unexpected, expecting directory to export kreypi library"
-	exit 1
-elif [ -d /lib/shell ]; then
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Directory '/lib/shell' already exists, no need to make it"
-else
-	printf 'FATAL: %s\n' "Unexpected result in KREYPI_INIT checking for /lib/shell"
-	exit 255
-fi
-
-# Fetch the library
-if [ -e /lib/shell/kreypi.sh ]; then
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Directory in '/lib/shell' already exists, skipping fetch"
-elif command -v wget >/dev/null; then
-	wget https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh -O /lib/shell/kreypi.sh || { printf 'FATAL: %s\n' "Unable to fetch kreypi.sh from https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh in /lib/shell/kreypi.sh using wget" ; exit 1;}
-elif command -v curl >/dev/null; then
-	curl https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh -o /lib/shell/kreypi.sh || { printf 'FATAL: %s\n' "Unable to fetch kreypi.sh from https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh in /lib/shell/kreypi.sh using curl" ; exit 1 ;}
-else
-	printf 'FATAL: %s\n' "Unable to download kreypi library from 'https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh' in '/lib/shell/kreypi.sh'"
-	exit 255
-fi
-
-# Sanitycheck for /lib/shell
-if [ -e /lib/shell ]; then
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Directory in '/lib/shell' already exists, passing sanity check"
-elif [ ! -e /lib/shell ]; then
-	printf 'FATAL: %s\n' "Sanitycheck for /lib/shell failed"
-	exit 1
-else
-	printf 'FATAL: %s\n' "Unexpected happend in sanitycheck for /lib/shell"
-	exit 255
-fi
-
-# Source KREYPI
-if [ -e "/lib/shell/kreypi.sh" ]; then
-	# 'source' can not be used on POSIX sh
-	# shellcheck source="/lib/shell/kreypi.sh"
-	. "/lib/shell/kreypi.sh" || { printf 'FATAL: %s\n' "Unable to source '/lib/shell/kreypi.sh'" ; exit 1 ;}
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Kreypi in '/lib/shell/kreypi.sh' has been successfully sourced"
-elif [ ! -e "/lib/shell/kreypi.sh" ]; then
-	printf 'FATAL: %s\n' "Unable to source '/lib/shell/kreypi.sh' since path does not exists"
-	exit 1
-else
-	printf 'FATAL: %s\n' "Unexpected happend in sourcing KREYPI_INIT"
-	exit 255
-fi
-
-### END OF KREYPI INIT ###
+# Source kreypi
+. ../kreypi/kreypi_init.sh
 
 coreutils_export() {
 	# Export jobs if available
@@ -154,7 +86,7 @@ coreutils_export() {
 
 	# Configure (generate Makefile)
 	if [ ! -e "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/Makefile" ]; then
-		debug "File '$targetdir/usr/src/coreutils/coreutils-8.31/Makefile' does not exist trying to gerenate it through congirure"
+		debug "File '$targetdir/usr/src/coreutils/coreutils-8.31/Makefile' does not exist trying to gerenate it through configure"
 		(
 			fixme "Implement running on non-root"
 				# shellcheck disable=SC2034 # Hotfix!
@@ -162,7 +94,20 @@ coreutils_export() {
 			fixme "Do not use cd"
 				cd "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/" || die 1 "Unable to change directory in '/usr/src/coreutils/coreutils-$latest_coreutils/'"
 			# Run configure
-			"$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/configure" --prefix="$targetdir/usr/local" --exec-prefix="$targetdir/" || die 1 "Unable to generate a Makefile through '$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/configure'"
+			"$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/configure" \
+				--prefix="$targetdir/usr/local" \
+				--exec-prefix="$targetdir/" \
+				--sbindir="$targetdir/sbin/" \
+				--libexecdir="$targetdir/libexec/" \
+				--sysconfdir="$targetdir/etc/" \
+				--localstatedir="$targetdir/var/" \
+				--libdir="$targetdir/lib/" \
+				--includedir="$targetdir/usr/local/include" \
+				--datarootdir="$targetdir/usr/local/share" \
+				--localedir="$targetdir/usr/local/share/info" \
+				--mandir="$targetdir/usr/local/share/man" \
+				--without-selinux \
+			|| die 1 "Unable to generate a Makefile through '$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/configure'"
 		)
 	elif [ -e "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/Makefile" ]; then
 		debug "File '$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/Makefile' already exists, skipping configure"
@@ -200,7 +145,12 @@ while [ $# -ge 1 ]; do case "$1" in
 				targetdir="${targetdir##--targetdir=}" ;;
 			/*) targetdir="$1" ;;
 			*) die 255 "Unexpected happend in hierarhcer - arguments for targetdir"
-		esac ; shift 1 ;;
+		esac
+		shift 1 ;;
+	# Used for sourcing
+	--source)
+		sourcing=1
+		shift 1 ;;
 	--help|-help|-h)
 		printf '%s\n' \
 			"Usage: coreutils [TARGET]" \
@@ -213,4 +163,5 @@ while [ $# -ge 1 ]; do case "$1" in
 	*) die 2 "Unrecognized argument has been parsed - '$1'"
 esac; done
 
-coreutils_export "$targetdir"
+# If source is used skip core
+[ -z "$sourcing" ] && coreutils_export "$targetdir"

@@ -5,92 +5,23 @@
 # Based in part upon 'lfs-scripts' from emmet1 (https://github.com/emmett1/lfs-scripts), which is:
 # 		Copyright 2018-2019 Emmet1 <emmett1.2miligrams@gmail.com> as GPLv3
 
-
 : '
 Make Filesystem hierarchy
 Generate filesystem hierarchy depending on the input
 
 More info provided in help argument
+
+This file is used for sourcing
 '
 
-### START OF KREYPI INIT ###
-# https://github.com/RXT067/Scripts/tree/kreyren/kreypi
-
-# Do not make additional functions here since we are going to source a library
-
-# Check for root
-if [ "$(id -u)" != 0 ]; then
-	printf 'FATAL: %s\n' "This script is using KREYPI library which needs to be exported in /lib/shell using root permission"
-	exit 3
-elif [ "$(id -u)" = 0 ]; then
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Script executed from an user with ID $(id -u)"
-else
-	printf 'FATAL: %s\n' "Unexpected happend in KREYPI_INIT for checking root"
-	exit 255
-fi
-
-# Create a new directory for shell libraries if not present already
-if [ ! -e /lib/shell ]; then
-	mkdir /lib/shell || { printf 'FATAL: %s\n' "Unable to make a new directory in '/lib/shell', is this non-standard file hierarchy?" ; exit 1 ;}
-elif [ -f /lib/shell ]; then
-	printf 'FATAL: %s\n' "File '/lib/shell' is a file which is unexpected, expecting directory to export kreypi library"
-	exit 1
-elif [ -d /lib/shell ]; then
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Directory '/lib/shell' already exists, no need to make it"
-else
-	printf 'FATAL: %s\n' "Unexpected result in KREYPI_INIT checking for /lib/shell"
-	exit 255
-fi
-
-# Fetch the library
-if [ -e /lib/shell/kreypi.sh ]; then
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Directory in '/lib/shell' already exists, skipping fetch"
-elif command -v wget >/dev/null; then
-	wget https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh -O /lib/shell/kreypi.sh || { printf 'FATAL: %s\n' "Unable to fetch kreypi.sh from https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh in /lib/shell/kreypi.sh using wget" ; exit 1;}
-elif command -v curl >/dev/null; then
-	curl https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh -o /lib/shell/kreypi.sh || { printf 'FATAL: %s\n' "Unable to fetch kreypi.sh from https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh in /lib/shell/kreypi.sh using curl" ; exit 1 ;}
-else
-	printf 'FATAL: %s\n' "Unable to download kreypi library from 'https://raw.githubusercontent.com/RXT067/Scripts/kreyren/kreypi/kreypi.sh' in '/lib/shell/kreypi.sh'"
-	exit 255
-fi
-
-# Sanitycheck for /lib/shell
-if [ -e /lib/shell ]; then
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Directory in '/lib/shell' already exists, passing sanity check"
-elif [ ! -e /lib/shell ]; then
-	printf 'FATAL: %s\n' "Sanitycheck for /lib/shell failed"
-	exit 1
-else
-	printf 'FATAL: %s\n' "Unexpected happend in sanitycheck for /lib/shell"
-	exit 255
-fi
-
-# Source KREYPI
-if [ -e "/lib/shell/kreypi.sh" ]; then
-	# 'source' can not be used on POSIX sh
-	# shellcheck source="/lib/shell/kreypi.sh"
-	. "/lib/shell/kreypi.sh" || { printf 'FATAL: %s\n' "Unable to source '/lib/shell/kreypi.sh'" ; exit 1 ;}
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && printf 'DEBUG: %s\n' "Kreypi in '/lib/shell/kreypi.sh' has been successfully sourced"
-elif [ ! -e "/lib/shell/kreypi.sh" ]; then
-	printf 'FATAL: %s\n' "Unable to source '/lib/shell/kreypi.sh' since path does not exists"
-	exit 1
-else
-	printf 'FATAL: %s\n' "Unexpected happend in sourcing KREYPI_INIT"
-	exit 255
-fi
-
-### END OF KREYPI INIT ###
+# Source kreypi
+. ../kreypi/kreypi_init.sh
 
 hierarcher() {
 	# REFERENCE: 02-lfs-base
 	# REFERENCE: https://refspecs.linuxfoundation.org/FHS_3.0/fhs-3.0.pdf
 
-	[ -z "$targetdir" ] && die 2 "Variable targetdir '$targetdir' is not exported, which is required for hierarcher"
+	[ -z "$hierarcherTargetdir" ] && die 2 "Variable hierarcherTargetdir '$hierarcherTargetdir' is not exported, which is required for hierarcher"
 
 	# Grab variable
 	case "$hierarchy" in
@@ -111,71 +42,71 @@ hierarcher() {
 
 	# HELPER: Core FHS-3.0
 	if [ -n "$fsh_core" ]; then
-		emkdir "$targetdir/bin" 0755 root root
-		emkdir "$targetdir/dev" 0755 root root
-		emkdir "$targetdir/dev/null" 0666 root root # Based on emmet1
-		emkdir "$targetdir/dev/console" 0600 root root # Based on emmet1
-		emkdir "$targetdir/etc" 0755 root root
-		emkdir "$targetdir/etc/opt" 0755 root root
-		emkdir "$targetdir/home" 0755 root root
-		emkdir "$targetdir/lib" 0755 root root
-		emkdir "$targetdir/media" 0755 root root
-		emkdir "$targetdir/mnt" 0755 root root
-		emkdir "$targetdir/opt" 0755 root root
-		emkdir "$targetdir/proc" 0755 root root
-		emkdir "$targetdir/run" 0755 root root
-		emkdir "$targetdir/sbin" 0755 root root
-		emkdir "$targetdir/srv" 0755 root root
-		emkdir "$targetdir/sys" 0755 root root
-		emkdir "$targetdir/tmp" "1777" root root
-		emkdir "$targetdir/usr" 0755 root root
-		emkdir "$targetdir/usr/bin" 0755 root root
-		emkdir "$targetdir/usr/include" 0755 root root
-		emkdir "$targetdir/usr/lib" 0755 root root
-		emkdir "$targetdir/usr/sbin" 0755 root root
-		emkdir "$targetdir/usr/share" 0755 root root
-		emkdir "$targetdir/usr/share/man" 0755 root root
-		emkdir "$targetdir/usr/var" 0755 root root
-		emkdir "$targetdir/usr/var/cache" 0755 root root
-		emkdir "$targetdir/usr/var/crash" 0755 root root
-		emkdir "$targetdir/usr/var/lock" 0755 root root
-		emkdir "$targetdir/usr/var/log" 0755 root root
-		emkdir "$targetdir/usr/var/opt" 0755 root root
-		emkdir "$targetdir/usr/var/spool" 0755 root root
-		emkdir "$targetdir/usr/var/tmp" 0755 root root
+		emkdir "$hierarcherTargetdir/bin" 0755 root root
+		emkdir "$hierarcherTargetdir/dev" 0755 root root
+		emkdir "$hierarcherTargetdir/dev/null" 0666 root root # Based on emmet1
+		emkdir "$hierarcherTargetdir/dev/console" 0600 root root # Based on emmet1
+		emkdir "$hierarcherTargetdir/etc" 0755 root root
+		emkdir "$hierarcherTargetdir/etc/opt" 0755 root root
+		emkdir "$hierarcherTargetdir/home" 0755 root root
+		emkdir "$hierarcherTargetdir/lib" 0755 root root
+		emkdir "$hierarcherTargetdir/media" 0755 root root
+		emkdir "$hierarcherTargetdir/mnt" 0755 root root
+		emkdir "$hierarcherTargetdir/opt" 0755 root root
+		emkdir "$hierarcherTargetdir/proc" 0755 root root
+		emkdir "$hierarcherTargetdir/run" 0755 root root
+		emkdir "$hierarcherTargetdir/sbin" 0755 root root
+		emkdir "$hierarcherTargetdir/srv" 0755 root root
+		emkdir "$hierarcherTargetdir/sys" 0755 root root
+		emkdir "$hierarcherTargetdir/tmp" "1777" root root
+		emkdir "$hierarcherTargetdir/usr" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/bin" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/include" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/lib" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/sbin" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/share" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/share/man" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/var" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/var/cache" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/var/crash" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/var/lock" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/var/log" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/var/opt" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/var/spool" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/var/tmp" 0755 root root
 	fi
 
 	# HELPER: Optional FHS-3.0
 	if [ -n "$fsh_optional" ]; then
-		emkdir "$targetdir/etc" 0755 root root
-		emkdir "$targetdir/etc/X11" 0755 root root && warn "Directory $targetdir/etc/X11 is optional for configuration of the X Window System"
-		emkdir "$targetdir/etc/sgml" 0755 root root && warn "Directory $targetdir/etc/sgml is optional for SGML (Standard Generalized Markup Language) files"
-		emkdir "$targetdir/etc/xml" 0755 root root && warn "Directory $targetdir/etc/xml is optional for XML (Extensible Markup Language) files"
+		emkdir "$hierarcherTargetdir/etc" 0755 root root
+		emkdir "$hierarcherTargetdir/etc/X11" 0755 root root && warn "Directory $hierarcherTargetdir/etc/X11 is optional for configuration of the X Window System"
+		emkdir "$hierarcherTargetdir/etc/sgml" 0755 root root && warn "Directory $hierarcherTargetdir/etc/sgml is optional for SGML (Standard Generalized Markup Language) files"
+		emkdir "$hierarcherTargetdir/etc/xml" 0755 root root && warn "Directory $hierarcherTargetdir/etc/xml is optional for XML (Extensible Markup Language) files"
 
-		[ -z "$lib32" ] && emkdir "$targetdir/lib32" 0755 root root && warn "Directory $targetdir/lib32 is used only on 32-bit systems and multilib"
-		[ -z "$lib64" ] && emkdir "$targetdir/lib64" 0755 root root && warn "Directory $targetdir/lib64 is used only on 64-bit systems"
+		[ -z "$lib32" ] && emkdir "$hierarcherTargetdir/lib32" 0755 root root && warn "Directory $hierarcherTargetdir/lib32 is used only on 32-bit systems and multilib"
+		[ -z "$lib64" ] && emkdir "$hierarcherTargetdir/lib64" 0755 root root && warn "Directory $hierarcherTargetdir/lib64 is used only on 64-bit systems"
 
-		emkdir "$targetdir/root" "0750" root root && warn "Directory $targetdir/root is based on FSH 3.0 (https://refspecs.linuxfoundation.org/FHS_3.0/fhs-3.0.pdf) optional"
-		[ -z "$lib32" ] && emkdir "$targetdir/usr/lib32" 0755 root root && warn "Directory $targetdir/usr/lib32 is used only on 32-bit systems and multilib"
-		[ -z "$lib64" ] && emkdir "$targetdir/usr/lib64" 0755 root root && warn "Directory $targetdir/usr/lib64 is used only on 32-bit systems and multilib"
+		emkdir "$hierarcherTargetdir/root" "0750" root root && warn "Directory $hierarcherTargetdir/root is based on FSH 3.0 (https://refspecs.linuxfoundation.org/FHS_3.0/fhs-3.0.pdf) optional"
+		[ -z "$lib32" ] && emkdir "$hierarcherTargetdir/usr/lib32" 0755 root root && warn "Directory $hierarcherTargetdir/usr/lib32 is used only on 32-bit systems and multilib"
+		[ -z "$lib64" ] && emkdir "$hierarcherTargetdir/usr/lib64" 0755 root root && warn "Directory $hierarcherTargetdir/usr/lib64 is used only on 32-bit systems and multilib"
 
-		emkdir "$targetdir/usr" 0755 root root
-		emkdir "$targetdir/usr/share" 0755 root root
-		emkdir "$targetdir/usr/share/color" 0755 root root && warn "Directory $targetdir/usr/share/color is optional directory for Color Management informations"
-		emkdir "$targetdir/usr/share/dict" 0755 root root && warn "Directory $targetdir/usr/share/dict is optional directory for word lists"
-		emkdir "$targetdir/usr/share/misc" 0755 root root && warn "Directory $targetdir/usr/share/misc is optional directory for architecture-independant data"
-		emkdir "$targetdir/usr/share/sgml" 0755 root root && warn "Directory $targetdir/usr/share/dict is optional directory for SGML (Standard Generalized Markup Language) data"
-		emkdir "$targetdir/usr/share/xml" 0755 root root && warn "Directory $targetdir/usr/share/xml is optional directory for XML (Extensible Markup Language) data"
-		emkdir "$targetdir/usr/src" 0755 root root && warn "Directory $targetdir/usr/src is optional directory for Source Code"
+		emkdir "$hierarcherTargetdir/usr" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/share" 0755 root root
+		emkdir "$hierarcherTargetdir/usr/share/color" 0755 root root && warn "Directory $hierarcherTargetdir/usr/share/color is optional directory for Color Management informations"
+		emkdir "$hierarcherTargetdir/usr/share/dict" 0755 root root && warn "Directory $hierarcherTargetdir/usr/share/dict is optional directory for word lists"
+		emkdir "$hierarcherTargetdir/usr/share/misc" 0755 root root && warn "Directory $hierarcherTargetdir/usr/share/misc is optional directory for architecture-independant data"
+		emkdir "$hierarcherTargetdir/usr/share/sgml" 0755 root root && warn "Directory $hierarcherTargetdir/usr/share/dict is optional directory for SGML (Standard Generalized Markup Language) data"
+		emkdir "$hierarcherTargetdir/usr/share/xml" 0755 root root && warn "Directory $hierarcherTargetdir/usr/share/xml is optional directory for XML (Extensible Markup Language) data"
+		emkdir "$hierarcherTargetdir/usr/src" 0755 root root && warn "Directory $hierarcherTargetdir/usr/src is optional directory for Source Code"
 
-		emkdir "$targetdir/var" 0755 root root
-		emkdir "$targetdir/var/accounts" 0755 root root && warn "Directory $targetdir/var/accounts is optional directory for process accounting logs"
-		emkdir "$targetdir/var/cache" 0755 root root
-		emkdir "$targetdir/var/cache/fonts" 0755 root root && warn "Directory $targetdir/var/fonts is optional directory for locally-generated fonts"
-		emkdir "$targetdir/var/cache/man" 0755 root root && warn "Directory $targetdir/var/man is optional directory for locally-generated manual pages"
-		emkdir "$targetdir/var/games" 0755 root root && warn "Directory $targetdir/var/games is optional directory for variable game data"
-		emkdir "$targetdir/var/mail" 0755 root root && warn "Directory $targetdir/var/mail is optional directory for user mailbox files"
-		emkdir "$targetdir/var/yp" 0755 root root && warn "Directory $targetdir/var/yp is optional directory for Network Information Service (NIS) database files"
+		emkdir "$hierarcherTargetdir/var" 0755 root root
+		emkdir "$hierarcherTargetdir/var/accounts" 0755 root root && warn "Directory $hierarcherTargetdir/var/accounts is optional directory for process accounting logs"
+		emkdir "$hierarcherTargetdir/var/cache" 0755 root root
+		emkdir "$hierarcherTargetdir/var/cache/fonts" 0755 root root && warn "Directory $hierarcherTargetdir/var/fonts is optional directory for locally-generated fonts"
+		emkdir "$hierarcherTargetdir/var/cache/man" 0755 root root && warn "Directory $hierarcherTargetdir/var/man is optional directory for locally-generated manual pages"
+		emkdir "$hierarcherTargetdir/var/games" 0755 root root && warn "Directory $hierarcherTargetdir/var/games is optional directory for variable game data"
+		emkdir "$hierarcherTargetdir/var/mail" 0755 root root && warn "Directory $hierarcherTargetdir/var/mail is optional directory for user mailbox files"
+		emkdir "$hierarcherTargetdir/var/yp" 0755 root root && warn "Directory $hierarcherTargetdir/var/yp is optional directory for Network Information Service (NIS) database files"
 	fi
 }
 
@@ -184,27 +115,31 @@ while [ $# -ge 1 ]; do case "$1" in
 		# Allow different arguments
 		case $1 in
 			--targetdir=/*)
-				targetdir="$1"
-				export targetdir="${targetdir##--targetdir=}" ;;
-			/*) export targetdir="$1" ;;
-			*) die 255 "Unexpected happend in hierarhcer - arguments for targetdir"
+				hierarcherTargetdir="$1"
+				export hierarcherTargetdir="${hierarcherTargetdir##--hierarcherTargetdir=}" ;;
+			/*) export hierarcherTargetdir="$1" ;;
+			*) die 255 "Unexpected happend in hierarhcer - arguments for hierarcherTargetdir"
 		esac
 
-		# Sanity for $targetdir
-		if [ -z "$targetdir" ]; then
+		# Sanity for $hierarcherTargetdir
+		if [ -z "$hierarcherTargetdir" ]; then
 			die 2 "Funtion ${FUNCNAME[0]} requires at least one argument, but none was parsed"
-		elif [ -z "$targetdir" ] && [ -n "$targetdir" ]; then
-			die 2 "Funtion ${FUNCNAME[0]} requires two arguments but only one was parsed - $targetdir"
-		elif [ ! -e "$targetdir" ] || [ -d "$targetdir" ]; then
-			emkdir "$targetdir" 0755 root root
-		elif [ -f "$targetdir" ]; then
-			die 1 "Target directory '$targetdir' is file which is unexpected, dieing for safety"
-		elif [ -h "$targetdir" ]; then
-			die 1 "Target directory '$targetdir' is symlink, dieing for safety"
+		elif [ -z "$hierarcherTargetdir" ] && [ -n "$hierarcherTargetdir" ]; then
+			die 2 "Funtion ${FUNCNAME[0]} requires two arguments but only one was parsed - $hierarcherTargetdir"
+		elif [ ! -e "$hierarcherTargetdir" ] || [ -d "$hierarcherTargetdir" ]; then
+			emkdir "$hierarcherTargetdir" 0755 root root
+		elif [ -f "$hierarcherTargetdir" ]; then
+			die 1 "Target directory '$hierarcherTargetdir' is file which is unexpected, dieing for safety"
+		elif [ -h "$hierarcherTargetdir" ]; then
+			die 1 "Target directory '$hierarcherTargetdir' is symlink, dieing for safety"
 		else
-			die 255 "Function MFH - sanity for targetdir"
+			die 255 "Function MFH - sanity for hierarcherTargetdir"
 		fi
 
+		shift 1 ;;
+	# Used for sourcing
+	--source)
+		sourcing=1
 		shift 1 ;;
 	fsh-core|fsh-optional|fsh-all) export hierarchy="$1" ; shift 1 ;;
 	--disable-lib32)
@@ -236,9 +171,10 @@ while [ $# -ge 1 ]; do case "$1" in
 		die 2 "Unknown argument '$1' has been parsed in hierarcher, see --help for supported arguments"
 esac; done
 
-printf 'FIXME: %s\n' "This may be executed when no argument is parsed, expecting to output unknown argument error"
+# Execute core if not used for sourcing
+if [ -z "$sourcing" ]; then
+	fixme "This may be executed when no argument is parsed, expecting to output unknown argument error"
+	hierarcher "$hierarcherTargetdir" "$hierarchy"
+fi
 
-# Execute core
-hierarcher "$targetdir" "$hierarchy"
-
-unset targetdir hierarcht lib32 lib64
+unset hierarcherTargetdir hierarchy lib32 lib64
