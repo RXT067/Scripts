@@ -106,12 +106,12 @@ hierarcher() {
 			fsh_optional="true"
 			fsh_core="false"
 		;;
-		*) die 2 "Wrong argument '$hierarchy' was parsed in ${FUNCNAME[0]}\n HINT: expecting fsh-all, fsh-core or fsh-optional"
+		*) die 2 "Wrong argument '$hierarchy' was parsed in ${FUNCNAME[0]}, expecting fsh-all, fsh-core or fsh-optional"
 	esac
 
 	# HELPER: Core FHS-3.0
 	if [ -n "$fsh_core" ]; then
-		emkdir "$targetdir/bin" 0755 user root
+		emkdir "$targetdir/bin" 0755 root root
 		emkdir "$targetdir/dev" 0755 root root
 		emkdir "$targetdir/dev/null" 0666 root root # Based on emmet1
 		emkdir "$targetdir/dev/console" 0600 root root # Based on emmet1
@@ -185,8 +185,8 @@ while [ $# -ge 1 ]; do case "$1" in
 		case $1 in
 			--targetdir=/*)
 				targetdir="$1"
-				targetdir="${targetdir##--targetdir=}" ;;
-			/*) targetdir="$1" ;;
+				export targetdir="${targetdir##--targetdir=}" ;;
+			/*) export targetdir="$1" ;;
 			*) die 255 "Unexpected happend in hierarhcer - arguments for targetdir"
 		esac
 
@@ -206,14 +206,14 @@ while [ $# -ge 1 ]; do case "$1" in
 		fi
 
 		shift 1 ;;
-	fsh-core|fsh-optional|fsh-all) hierarchy="$1" ; shift 1 ;;
+	fsh-core|fsh-optional|fsh-all) export hierarchy="$1" ; shift 1 ;;
 	--disable-lib32)
 		einfo "Generating of 32-bit lib structure is disabled"
-		lib32="disable"
+		export lib32="disable"
 		shift 1 ;;
 	--disable-lib64)
 		einfo "Generating of 64-bit lib structure is disabled"
-		lib64="disable"
+		export lib64="disable"
 		shift 1 ;;
 	--help|-help|-h)
 		printf '%s\n' \
@@ -222,19 +222,23 @@ while [ $# -ge 1 ]; do case "$1" in
 			"Example: hierarcher /mnt/lfs fsh-core" \
 			"" \
 			"Options:" \
-			"  --disable-lib64   Do not create 64-bit libs"
-			"  --disable-lib32   Do not create 32-bit libs"
+			"  --disable-lib64   Do not create 64-bit libs" \
+			"  --disable-lib32   Do not create 32-bit libs" \
 			"Hierarchy:" \
-			" fsh-all            Generate all directories in FSH3.0" \
-			" fsh-cor            Generate only mandatory directories based on FSH3.0" \
-			" fsh-optional       Generate only optional files of FSH3.0" \
+			"  fsh-all           Generate all directories in FSH3.0" \
+			"  fsh-cor           Generate only mandatory directories based on FSH3.0" \
+			"  fsh-optional      Generate only optional files of FSH3.0" \
 			"" \
 			"Report bugs to: bug-hierarcher@rixotstudio.cz" \
-			"RXT hierarcher home page: <https://github.com/RXT067/Scripts/tree/master/LFS/hierarcher>" \
+			"RXT hierarcher home page: <https://github.com/RXT067/Scripts/tree/master/LFS/hierarcher>"
 		exit 1 ;;
 	*)
 		die 2 "Unknown argument '$1' has been parsed in hierarcher, see --help for supported arguments"
 esac; done
 
+printf 'FIXME: %s\n' "This may be executed when no argument is parsed, expecting to output unknown argument error"
+
 # Execute core
-hierarcher
+hierarcher "$targetdir" "$hierarchy"
+
+unset targetdir hierarcht lib32 lib64
