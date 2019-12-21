@@ -5,31 +5,14 @@
 # Kreypi (Krey's API) for shell
 
 # Output manipulation
-info() {
-	message="$1"
+info() { printf 'INFO: %s\n' "$1" ;}
 
-	printf 'INFO: %s\n' "$message"
+warn() { printf 'WARN: %s\n' "$1" 1>&2 ;}
 
-	unset message
-}
+fixme() { printf 'FIXME: %s\n' "$1" ;}
 
-warn() {
-	message="$1"
-
-	printf 'WARN: %s\n' "$message" 1>&2
-
-	unset message
-}
-
-debug() {
-	message="$1"
-
-	# Variable 'debug' is set by the end-user
-	# shellcheck disable=SC2154
-	[ -n "$debug" ] && { printf "DEBUG: %s\n" "$message" 1>&2 ;} ; true
-
-	unset message
-}
+# shellcheck disable=SC2154 # Variable 'debug' is set by the end-user
+debug() { [ -n "$debug" ] && printf "DEBUG: %s\n" "$1" 1>&2 ;}
 
 # SYNOPSIS: $0 [error_code [num:0~255]] (message)
 ## TODO: Add debug msg option
@@ -120,21 +103,6 @@ die()	{
 	esac
 
 	unset err_code message MYFUNCNAME
-}
-
-# Provide shell compatibility without the need to change syntax when possible
-# Synopsis: $0 [y/n]
-shellcompat() {
-	case "$1" in
-		yes|y|"")
-			debug 'Shell compatibility is enabled'
-			# shellcheck disable=SC2178
-			[ -z "$MYFUNCNAME" ] && export FUNCNAME="(execute in bash to get function name)"
-		;;
-		no|n)
-			[ -z "$MYFUNCNAME" ] && die 1 'Shell compatibility is disabled on this script/function'
-			debug 'Shell compatibility is disabled'
-	esac
 }
 
 # Wrapper for git
@@ -259,6 +227,49 @@ emkdir() {
 	else
 		die 255 "emkdir checking for groupperm variable"
 	fi
+
+	unset emkdirTargetdir emkdirPermission emkdirUserperm emkdirGroupperm
+}
+
+downloader() {
+	downloaderUrl="$1"
+	downloaderTarget="$2"
+
+	# Shell compatibility - FUNCNAME
+	# shellcheck disable=SC2039 # FUNCNAME is undefined is irelevant since we are overwriting it.
+	if [ -z "${FUNCNAME[0]}" ]; then
+		MYFUNCNAME="downloader"
+	elif [ -n "${FUNCNAME[0]}" ]; then
+		MYFUNCNAME="${FUNCNAME[0]}"
+	else
+		die 255 "shellcompat - FUNCNAME"
+	fi
+
+	if [ -z "$downloaderUrl" ]; then
+		die 2 "Function '$MYFUNCNAME' expects first argument with a hyperlink"
+	elif [ -z "$downloaderTarget" ]; then
+		die 2 "Function '$MYFUNCNAME' expects second argument pointing to a target to which we will export content of '$downloaderUrl'"
+	elif [ -n "$downloaderUrl" ] && [ -n "$downloaderTarget" ]; then
+		if [ ! -e "$downloaderTarget" ]; then
+			case "$downloaderUrl" in
+				http://*|https://*)
+					if command -v wget >/dev/null; then
+						wget "$downloaderUrl" -O "$downloaderTarget" || die 1 "Unable to download '$downloaderUrl' in '$downloaderTarget' using wget"
+					elif command -v curl >/dev/null; then
+						curl -o "$downloaderTarget" "$downloaderUrl" || die 1 "Unable to download '$downloaderUrl' in '$downloaderTarget' using curl"
+					else
+						die 255 "Unable to download hyperlink '$downloaderUrl' in '$downloaderTarget', unsupported downloader?"
+					fi ;;
+				*) die 2 "hyperlink '$downloaderUrl' is not supported"
+			esac
+		elif [ -e "$downloaderTarget" ]; then
+			info "Pathname '$downloaderTarget' already exists, skipping download"
+		else
+			die 255 "downloader cheking for target '$downloaderTarget'"
+		fi
+	fi
+
+	unset target url
 }
 
 # Checkroot - Check if executed as root, if not tries to use sudo if KREYPI_CHECKROOT_USE_SUDO variable is not blank

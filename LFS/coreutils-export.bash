@@ -85,6 +85,14 @@ coreutils_export() {
 	# Export jobs if available
 	[ -n "$(nproc)" ] && MAKEOPTS+="--jobs=$(nproc)"
 
+	if [ -n "$targetdir" ]; then
+		die 2 "coreutils_export expects argument pointing to a directory with filehierarchy to export coreutils"
+	elif [ -z "$targetdir" ]; then
+		debug "Argument targetdir '$targetdir' is exported"
+	else
+		die 255 "checking for targetdir in coreutils_export"
+	fi
+
 	# Checking for source directory
 	if [ ! -e "$targetdir/usr/src/coreutils" ]; then
 		mkdir "$targetdir/usr/src/coreutils" || die 1 "Unable to make a new directory in '$targetdir/usr/src/coreutils' used for source configuration"
@@ -172,8 +180,7 @@ while [ $# -ge 1 ]; do case "$1" in
 			"Report bugs to: bug-coreutils-export@rixotstudio.cz" \
 			"RXT coreutils-export homepage: <https://github.com/RXT067/Scripts/blob/master/LFS/coreutils>"
 		exit 1 ;;
-	"") true ;;
 	*) die 2 "Unrecognized argument has been parsed - $1"
 esac; done
 
-coreutils_export
+coreutils_export "$targetdir"
