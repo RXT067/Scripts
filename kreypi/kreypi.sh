@@ -197,48 +197,69 @@ emkdir() {
 	# SYNOPSIS: command [pathname] (permission) (user) (group)
 	# TODO: capture everything that has syntax of path in $1
 
-	die fixme "Function emkdir needs refactor"
+	targetdir="$1"
+	permission="$2"
+	userperm="$3"
+	groupperm="$4"
 
-	# # shellcompat
-	# # shellcheck disable=SC2178
-	# [ -z "$MYFUNCNAME" ] && FUNCNAME="emkdir"
-	#
-	# ## Create a file
-	# [ -f "$1" ] && die 1 "Attempting to make DIRECTORY in pathname of FILE"
-	# [ ! -d "$1" ] && { mkdir "$1" || die 1 "Unable to make a new directory in '$1'" ;} || debug "Directory '$1' already exists"
-	#
-	# ## pathname permission
-	# if [ -n "$2" ]; then
-	# 	# Sanitycheck for parsed
-	# 	[[ "$2" == [0-9][0-9][0-9][0-9] ]] && { debug "Second argument ($2) for file '$1' is correct." ;} || die "Second argument in $MYFUNCNAME for '$1' expects '[0-9][0-9][0-9][0-9]', but '$2' was parsed."
-	#
-	# 	#  Change permission
-	# 	if [ "$(stat -c "%#a" "$1" 2> /dev/null)" = "$2" ]; then
-	# 		debug "Directory $1 permission set on $(stat -c "%#a" "$1" 2> /dev/null)"
-	# 	elif [ "$(stat -c "%#a" "$1" 2> /dev/null)" != "$2" ]; then
-	# 		debug "Directory '$1' has permission $(stat -c "%#a" "$1" 2> /dev/null) while expecting '${2}', trying to resolve"
-	# 		chmod "$2" "$1" || die 1 "Unable to change permission in directory '$1' on '$2' (currently $(stat -c "%#a" "$1" 2> /dev/null))"
-	# 	fi
-	# elif [ -z "$2" ]; then
-	# 	return 0
-	# else die wtf
-	# fi
-	#
-	# ## pathname ownership
-	# if [ -n "$3" ] && [ -n "$4" ]; then
-	# 	if [[ "$(stat -c "%U" "$1" 2> /dev/null)" != "$3" ]] && [[ "$(stat -c "%G" "$1" 2> /dev/null)" != "$4" ]]; then
-	# 		chown "$3":"$4" "$1" && debug "Permission of $1 has been updated on $(stat -c "%U" "$1" 2> /dev/null):$(stat -c "%G" "$1" 2> /dev/null)" || die "Unable to update Ownership of $1 on ${3}:${4}, got $(stat -c "%U" "$1" 2> /dev/null):$(stat -c "%G" "$1" 2> /dev/null)"
-	# 	elif [[ "$(stat -c "%U" "$1" 2> /dev/null)" == "$3" ]] && [[ "$(stat -c "%G" "$1" 2> /dev/null)" == "$4" ]]; then
-	# 		debug "Permission of directory $1 is already set on ${3}:${4}"
-	# 	fi
-	# elif [ -n "$3" ] && [ -z "$4" ]; then
-	# 	die 1 "TODO: change user only"
-	# elif [ -z "$3" ] && [ -z "$4" ]; then
-	# 	debug "Third and Forth arguments are not set for $1, skipping.."
-	# else die wtf
-	# fi
+	# Path check
+	if [ ! -d "$targetdir" ]; then
+		debug "Creating a directory in '$targetdir'"
+		mkdir "$targetdir" || die 1 "Unable to make a new directory in '$targetdir'"
+	elif [ -d "$targetdir" ]; then
+		debug "Directory '$targetdir' already exists, skipping creation"
+	elif [ -f "$targetdir" ]; then
+		die 1 "Path '$targetdir' is a file which is unexpected, skipping creation of directory"
+	else
+		die 255 "emkdir - path check"
+	fi
+
+	# Check permission
+	case "$permission" in
+		[0-9][0-9][0-9][0-9])
+			if [ "$(stat -c "%#a" "$targetdir" 2>/dev/null)" != "$permission" ]; then
+				debug "Changing permisson of '$targetdir' on '$permission'"
+				chmod "$permission" "$targetdir" || die 1 "Unable to change permission '$permission' for '$targetdir'"
+			elif [ "$(stat -c "%#a" "$targetdir" 2>/dev/null)" = "$permission" ]; then
+				debug "Directory '$targetdir' already have permission set on '$permission'"
+			else
+				die 255 "Checking permission for '$targetdir'"
+			fi ;;
+		*) die 2 "Second argument '$permission' does not match syntax '[0-9][0-9][0-9][0-9]'"
+	esac
+
+	# Check user permission
+	if [ -n "$userperm" ]; then
+		if [ "$(stat -c "%U" "$targetdir" 2>/dev/null)" != "$userperm" ]; then
+			debug "Changing user permission of '$targetdir' on '$userperm'"
+			chown "$userperm" "$targetdir" || die 1 "Unable to change user permission of '$targetdir' on '$userperm'"
+		elif [ "$(stat -c "%U" "$targetdir" 2>/dev/null)" = "$userperm" ]; then
+			debug "User permission of '$targetdir' is already '$userperm'"
+		else
+			die 255 "emkdir checking for userperm"
+		fi
+	elif [ -n "$userperm" ]; then
+		debug "User permission for '$targetdir' is not specified, skipping changing"
+	else
+		die 255 "emkdir check for userperm variable"
+	fi
+
+	# Check group permission
+	if [ -n "$groupperm" ]; then
+		if [ "$(stat -c "%G" "$targetdir" 2>/dev/null)" != "$groupperm" ]; then
+			debug "Changing group permission of '$targetdir' on '$groupperm'"
+			chgrp "$groupperm" "$targetdir" || die 1 "Unable to change group permission of '$targetdir' on '$groupperm'"
+		elif [ "$(stat -c "%G" "$targetdir" 2>/dev/null)" = "$groupperm" ]; then
+			debug "Group permission of '$targetdir' is already '$groupperm'"
+		else
+			die 255 "Checking group permission of '$targetdir'"
+		fi
+	elif [ -z "$groupperm" ]; then
+		debug "Group permission is not specified for '$targetdir', skipping change"
+	else
+		die 255 "emkdir checking for groupperm variable"
+	fi
 }
-
 
 # Checkroot - Check if executed as root, if not tries to use sudo if KREYPI_CHECKROOT_USE_SUDO variable is not blank
 checkroot() {
