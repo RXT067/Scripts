@@ -197,65 +197,65 @@ emkdir() {
 	# SYNOPSIS: command [pathname] (permission) (user) (group)
 	# TODO: capture everything that has syntax of path in $1
 
-	targetdir="$1"
-	permission="$2"
-	userperm="$3"
-	groupperm="$4"
+	emkdirTargetdir="$1"
+	emkdirPermission="$2"
+	emkdirUserperm="$3"
+	emkdirGroupperm="$4"
 
 	# Path check
-	if [ ! -d "$targetdir" ]; then
-		debug "Creating a directory in '$targetdir'"
-		mkdir "$targetdir" || die 1 "Unable to make a new directory in '$targetdir'"
-	elif [ -d "$targetdir" ]; then
-		debug "Directory '$targetdir' already exists, skipping creation"
-	elif [ -f "$targetdir" ]; then
-		die 1 "Path '$targetdir' is a file which is unexpected, skipping creation of directory"
+	if [ ! -d "$emkdirTargetdir" ]; then
+		debug "Creating a directory in '$emkdirTargetdir'"
+		mkdir "$emkdirTargetdir" || die 1 "Unable to make a new directory in '$emkdirTargetdir'"
+	elif [ -d "$emkdirTargetdir" ]; then
+		debug "Directory '$emkdirTargetdir' already exists, skipping creation"
+	elif [ -f "$emkdirTargetdir" ]; then
+		die 1 "Path '$emkdirTargetdir' is a file which is unexpected, skipping creation of directory"
 	else
 		die 255 "emkdir - path check"
 	fi
 
 	# Check permission
-	case "$permission" in
+	case "$emkdirPermission" in
 		[0-9][0-9][0-9][0-9])
-			if [ "$(stat -c "%#a" "$targetdir" 2>/dev/null)" != "$permission" ]; then
-				debug "Changing permisson of '$targetdir' on '$permission'"
-				chmod "$permission" "$targetdir" || die 1 "Unable to change permission '$permission' for '$targetdir'"
-			elif [ "$(stat -c "%#a" "$targetdir" 2>/dev/null)" = "$permission" ]; then
-				debug "Directory '$targetdir' already have permission set on '$permission'"
+			if [ "$(stat -c "%#a" "$emkdirTargetdir" 2>/dev/null)" != "$emkdirPermission" ]; then
+				debug "Changing permisson of '$emkdirTargetdir' on '$emkdirPermission'"
+				chmod "$emkdirPermission" "$emkdirTargetdir" || die 1 "Unable to change permission '$emkdirPermission' for '$emkdirTargetdir'"
+			elif [ "$(stat -c "%#a" "$emkdirTargetdir" 2>/dev/null)" = "$emkdirPermission" ]; then
+				debug "Directory '$emkdirTargetdir' already have permission set on '$emkdirPermission'"
 			else
-				die 255 "Checking permission for '$targetdir'"
+				die 255 "Checking permission for '$emkdirTargetdir'"
 			fi ;;
-		*) die 2 "Second argument '$permission' does not match syntax '[0-9][0-9][0-9][0-9]'"
+		*) die 2 "Second argument '$emkdirPermission' does not match syntax '[0-9][0-9][0-9][0-9]'"
 	esac
 
 	# Check user permission
-	if [ -n "$userperm" ]; then
-		if [ "$(stat -c "%U" "$targetdir" 2>/dev/null)" != "$userperm" ]; then
-			debug "Changing user permission of '$targetdir' on '$userperm'"
-			chown "$userperm" "$targetdir" || die 1 "Unable to change user permission of '$targetdir' on '$userperm'"
-		elif [ "$(stat -c "%U" "$targetdir" 2>/dev/null)" = "$userperm" ]; then
-			debug "User permission of '$targetdir' is already '$userperm'"
+	if [ -n "$emkdirUserperm" ]; then
+		if [ "$(stat -c "%U" "$emkdirTargetdir" 2>/dev/null)" != "$emkdirUserperm" ]; then
+			debug "Changing user permission of '$emkdirTargetdir' on '$emkdirUserperm'"
+			chown "$emkdirUserperm" "$emkdirTargetdir" || die 1 "Unable to change user permission of '$emkdirTargetdir' on '$emkdirUserperm'"
+		elif [ "$(stat -c "%U" "$emkdirTargetdir" 2>/dev/null)" = "$emkdirUserperm" ]; then
+			debug "User permission of '$emkdirTargetdir' is already '$emkdirUserperm'"
 		else
 			die 255 "emkdir checking for userperm"
 		fi
-	elif [ -n "$userperm" ]; then
-		debug "User permission for '$targetdir' is not specified, skipping changing"
+	elif [ -n "$emkdirUserperm" ]; then
+		debug "User permission for '$emkdirTargetdir' is not specified, skipping changing"
 	else
 		die 255 "emkdir check for userperm variable"
 	fi
 
 	# Check group permission
-	if [ -n "$groupperm" ]; then
-		if [ "$(stat -c "%G" "$targetdir" 2>/dev/null)" != "$groupperm" ]; then
-			debug "Changing group permission of '$targetdir' on '$groupperm'"
-			chgrp "$groupperm" "$targetdir" || die 1 "Unable to change group permission of '$targetdir' on '$groupperm'"
-		elif [ "$(stat -c "%G" "$targetdir" 2>/dev/null)" = "$groupperm" ]; then
-			debug "Group permission of '$targetdir' is already '$groupperm'"
+	if [ -n "$emkdirGroupperm" ]; then
+		if [ "$(stat -c "%G" "$emkdirTargetdir" 2>/dev/null)" != "$emkdirGroupperm" ]; then
+			debug "Changing group permission of '$emkdirTargetdir' on '$emkdirGroupperm'"
+			chgrp "$emkdirGroupperm" "$emkdirTargetdir" || die 1 "Unable to change group permission of '$emkdirTargetdir' on '$emkdirGroupperm'"
+		elif [ "$(stat -c "%G" "$emkdirTargetdir" 2>/dev/null)" = "$emkdirGroupperm" ]; then
+			debug "Group permission of '$emkdirTargetdir' is already '$emkdirGroupperm'"
 		else
-			die 255 "Checking group permission of '$targetdir'"
+			die 255 "Checking group permission of '$emkdirTargetdir'"
 		fi
-	elif [ -z "$groupperm" ]; then
-		debug "Group permission is not specified for '$targetdir', skipping change"
+	elif [ -z "$emkdirGroupperm" ]; then
+		debug "Group permission is not specified for '$emkdirTargetdir', skipping change"
 	else
 		die 255 "emkdir checking for groupperm variable"
 	fi
