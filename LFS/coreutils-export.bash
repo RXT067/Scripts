@@ -5,6 +5,8 @@
 # Based in part upon 'lfs-scripts' from emmet1 (https://github.com/emmett1/lfs-scripts), which is:
 # 		Copyright 2018-2019 Emmet1 <emmett1.2miligrams@gmail.com> as GPLv3
 
+# shellcheck source=kreypi/kreypi.sh
+
 : '
 Export coreutils on target'
 
@@ -85,9 +87,9 @@ coreutils_export() {
 	# Export jobs if available
 	[ -n "$(nproc)" ] && MAKEOPTS+="--jobs=$(nproc)"
 
-	if [ -n "$targetdir" ]; then
+	if [ -z "$targetdir" ]; then
 		die 2 "coreutils_export expects argument pointing to a directory with filehierarchy to export coreutils"
-	elif [ -z "$targetdir" ]; then
+	elif [ -n "$targetdir" ]; then
 		debug "Argument targetdir '$targetdir' is exported"
 	else
 		die 255 "checking for targetdir in coreutils_export"
@@ -119,22 +121,31 @@ coreutils_export() {
 		die 255 "coreutils, checking for latest version"
 	fi
 
-	# Cache the coretuils tarball
+	# Create cache directory
 	if [ ! -d "$HOME/.cache/LFS/coreutils" ]; then
 		mkdir -p "$HOME/.cache/LFS/coreutils" || die 1 "Unable to make a new directory in '$HOME/.cache/LFS/coreutils' to be used for caching"
 	elif [ -f "$HOME/.cache/LFS/coreutils" ]; then
 		die 1 "Path '$HOME/.cache/LFS/coreutils' is a file which is unexpected, unable to cache coreutils tarball"
+	elif [ -d "$HOME/.cache/LFS/coreutils" ]; then
+		debug "Directory '$HOME/.cache/LFS/coreutils' already exists, skipping creation"
 	elif [ -h "$HOME/.cache/LFS/coreutils" ]; then
 		die 1 "Path '$HOME/.cache/LFS/coreutils' is a symlink, dieing for safety"
 	else
-		die 255 "coreutils caching"
+		die 255 "coreutils cache dir"
 	fi
 
-	downloader "https://ftp.gnu.org/gnu/coreutils/coreutils-$latest_coreutils.tar.xz" "$HOME/.cache/LFS/coreutils-$latest_coreutils.tar.xz"
+	# Download tarball
+	if [ ! -f "$HOME/.cache/LFS/coreutils/coreutils-$latest_coreutils.tar.xz" ]; then
+		downloader "https://ftp.gnu.org/gnu/coreutils/coreutils-$latest_coreutils.tar.xz" "$HOME/.cache/LFS/coreutils-$latest_coreutils.tar.xz"
+	elif [ -f "$HOME/.cache/LFS/coreutils/coreutils-$latest_coreutils.tar.xz" ]; then
+		debug "Archive '$HOME/.cache/LFS/coreutils/coreutils-$latest_coreutils.tar.xz' already exists, skipping download"
+	else
+		die 255 "Downloading coretuils"
+	fi
 
 	# Export tarball in source dir
 	if [ ! -e "$targetdir/usr/src/coreutils/configure" ]; then
-		tar -C "$targetdir/usr/src/coreutils" xpJf "$HOME/.cache/LFS/coreutils-$latest_coreutils.tar.xz" || die 1 "Unable to extract file '$HOME/.cache/LFS/coreutils-$latest_coreutils.tar.xz' in '$targetdir/usr/src/coreutils'"
+		tar xpJf "$HOME/.cache/LFS/coreutils-$latest_coreutils.tar.xz" -C "$targetdir/usr/src/coreutils" || die 1 "Unable to extract file '$HOME/.cache/LFS/coreutils-$latest_coreutils.tar.xz' in '$targetdir/usr/src/coreutils'"
 	elif [ -e "$targetdir/usr/src/coreutils/configure" ]; then
 		debug "Tarball in '$HOME/.cache/LFS/coreutils-$latest_coreutils.tar.xz' is already exported in '$targetdir/usr/src/coreutils', skipping export"
 	else
@@ -142,35 +153,54 @@ coreutils_export() {
 	fi
 
 	# Configure (generate Makefile)
-	if [ ! -e "$targetdir/usr/src/coreutils/Makefile" ]; then
-		debug "File '$targetdir/usr/src/coreutils/Makefile' does not exist trying to gerenate it through congirure"
-		"$targetdir/usr/src/coreutils/configure" || die 1 "Unable to generate a Makefile through '$targetdir/usr/src/coreutils/configure'"
-	elif [ -e "$targetdir/usr/src/coreutils/Makefile" ]; then
-		debug "File '$targetdir/usr/src/coreutils/Makefile' already exists, skipping configure"
+	if [ ! -e "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/Makefile" ]; then
+		debug "File '$targetdir/usr/src/coreutils/coreutils-8.31/Makefile' does not exist trying to gerenate it through congirure"
+		(
+			fixme "Implement running on non-root"
+				# shellcheck disable=SC2034 # Hotfix!
+				export FORCE_UNSAFE_CONFIGURE=1
+			fixme "Do not use cd"
+				cd "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/" || die 1 "Unable to change directory in '/usr/src/coreutils/coreutils-$latest_coreutils/'"
+			# Run configure
+			"$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/configure" --prefix="$targetdir/usr/local" --exec-prefix="$targetdir/" || die 1 "Unable to generate a Makefile through '$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/configure'"
+		)
+	elif [ -e "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/Makefile" ]; then
+		debug "File '$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/Makefile' already exists, skipping configure"
 	else
 		die 255 "Generating makefile for coreutils"
 	fi
 
-	die 1 "coreutils-export is not finished.."
-
 	# Compile
-	fixme "Implement trigger for compilation"
-	make -C "$targetdir/usr/src/coreutils" "$MAKEOPTS" || die 1 "Compilation of coretuils failed"
-	make -C "$targetdir/usr/src/coreutils" "$MAKEOPTS" install || die 1 "Installation of coretuils failed"
+	if [ ! -f "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/src/cp.o" ]; then
+		make -C "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/" "$MAKEOPTS" || die 1 "Compilation of coretuils failed"
+	elif [ -f "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/src/cp.o" ]; then
+		debug "Source is already compiled assuming that file '$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/src/cp.o' already exists"
+	else
+		die 255 "coreutils compilation"
+	fi
 
-	unset targetdir
+	# Install
+	if [ ! -f "$targetdir/bin/cat" ]; then
+		make -C "$targetdir/usr/src/coreutils/coreutils-$latest_coreutils/" "$MAKEOPTS" install || die 1 "Installation of coretuils failed"
+	elif [ -f "$targetdir/bin/cat" ]; then
+		warn "Coreutils is already installed (assuming that file '$targetdir/bin/cat' already exists), skipping install"
+	else
+		die 255 "coreutils install"
+	fi
+
+	unset targetdir MAKEOPTS latest_coreutils
 }
 
 while [ $# -ge 1 ]; do case "$1" in
 	/*|--targetdir=/*)
 		# Allow different arguments
-		case $1 in
+		case "$1" in
 			--targetdir=/*)
 				targetdir="$1"
 				targetdir="${targetdir##--targetdir=}" ;;
 			/*) targetdir="$1" ;;
 			*) die 255 "Unexpected happend in hierarhcer - arguments for targetdir"
-		esac ;;
+		esac ; shift 1 ;;
 	--help|-help|-h)
 		printf '%s\n' \
 			"Usage: coreutils [TARGET]" \
@@ -180,7 +210,7 @@ while [ $# -ge 1 ]; do case "$1" in
 			"Report bugs to: bug-coreutils-export@rixotstudio.cz" \
 			"RXT coreutils-export homepage: <https://github.com/RXT067/Scripts/blob/master/LFS/coreutils>"
 		exit 1 ;;
-	*) die 2 "Unrecognized argument has been parsed - $1"
+	*) die 2 "Unrecognized argument has been parsed - '$1'"
 esac; done
 
 coreutils_export "$targetdir"
