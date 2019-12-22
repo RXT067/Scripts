@@ -9,7 +9,14 @@ info() { printf 'INFO: %s\n' "$1" ;}
 
 warn() { printf 'WARN: %s\n' "$1" 1>&2 ;}
 
-fixme() { printf 'FIXME: %s\n' "$1" ;}
+fixme() {
+	case "$1" in
+		posix) printf 'POSIXBLOCK: %s\n' "$2" ;;
+		*) printf 'FIXME: %s\n' "$1"
+	esac
+}
+
+fixmePOSIX() { [ "$0" = sh ] && printf 'POSIXBLOCK: %s\n' "$1" ;}
 
 # shellcheck disable=SC2154 # Variable 'debug' is set by the end-user
 debug() { [ -n "$debug" ] && printf "DEBUG: %s\n" "$1" 1>&2 ;}
@@ -237,9 +244,10 @@ downloader() {
 
 	# Shell compatibility - FUNCNAME
 	# shellcheck disable=SC2039 # FUNCNAME is undefined is irelevant since we are overwriting it.
-	if [ -z "${FUNCNAME[0]}" ]; then
+	# shellcheck disable=SC2128 # invalid since we are using this for bash compatibility on shell
+	if [ -z "$FUNCNAME" ]; then
 		MYFUNCNAME="downloader"
-	elif [ -n "${FUNCNAME[0]}" ]; then
+	elif [ -n "$FUNCNAME" ]; then
 		MYFUNCNAME="${FUNCNAME[0]}"
 	else
 		die 255 "shellcompat - FUNCNAME"
@@ -254,16 +262,17 @@ downloader() {
 			case "$downloaderUrl" in
 				http://*|https://*)
 					if command -v wget >/dev/null; then
+						fixme "If this is killed by the user it saves incomplete file which is unexpected"
 						wget "$downloaderUrl" -O "$downloaderTarget" || die 1 "Unable to download '$downloaderUrl' in '$downloaderTarget' using wget"
 					elif command -v curl >/dev/null; then
 						curl -o "$downloaderTarget" "$downloaderUrl" || die 1 "Unable to download '$downloaderUrl' in '$downloaderTarget' using curl"
 					else
 						die 255 "Unable to download hyperlink '$downloaderUrl' in '$downloaderTarget', unsupported downloader?"
 					fi ;;
-				*) die 2 "hyperlink '$downloaderUrl' is not supported"
+				*) die 2 "hyperlink '$downloaderUrl' is not supported, fixme"
 			esac
 		elif [ -e "$downloaderTarget" ]; then
-			info "Pathname '$downloaderTarget' already exists, skipping download"
+			debug "Pathname '$downloaderTarget' already exists, skipping download"
 		else
 			die 255 "downloader cheking for target '$downloaderTarget'"
 		fi
@@ -305,3 +314,11 @@ check_exec() {
 
 	unset command
 }
+
+: '
+Ping to make sure that library is sourced
+
+Example:
+
+if ! KREYPI_PING; then exit 1; fi'
+KREYPI_PING() { return 0 ;}

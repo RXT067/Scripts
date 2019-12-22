@@ -44,10 +44,10 @@ coreutils_export() {
 			latest_coreutils="${latest_coreutils##coreutils-}"
 			latest_coreutils="${latest_coreutils%%.tar.xz}"
 	elif ! command -v curl >/dev/null && ping 1.1.1.1 -c 2 1>/dev/null; then
-		die 1 "Command curl is not executable on this system, exporting latest corefont version to 8.31"
+		die 1 "Command curl is not executable on this system, exporting latest coreutils version to 8.31"
 		latest_coreutils=8.31
 	elif command -v curl >/dev/null && ! ping 1.1.1.1 -c 2 1>/dev/null; then
-		die 1 "This system doesn't have access to the internet, exporting latest corefont version to 8.31"
+		die 1 "This system doesn't have access to the internet, exporting latest coreutils version to 8.31"
 		latest_coreutils=8.31
 	else
 		die 255 "coreutils, checking for latest version"
