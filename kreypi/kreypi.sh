@@ -16,8 +16,6 @@ fixme() {
 	esac
 }
 
-fixmePOSIX() { [ "$0" = sh ] && printf 'POSIXBLOCK: %s\n' "$1" ;}
-
 # shellcheck disable=SC2154 # Variable 'debug' is set by the end-user
 debug() { [ -n "$debug" ] && printf "DEBUG: %s\n" "$1" 1>&2 ;}
 
@@ -238,6 +236,29 @@ emkdir() {
 	unset emkdirTargetdir emkdirPermission emkdirUserperm emkdirGroupperm
 }
 
+# Wrapper used to extract an archive based on reources available on the system
+extractor() {
+	# Capture arguments
+	while [ $# -ge 1 ]; do case "$1" in
+		*.tar.gz) file="$1" ; shift 1 ;;
+		*/) targetdir="$1" ; shift 1 ;;
+		*) die 2 "Unsupported argument parsed in extractor - '$1'"
+	esac; done
+
+	die fixme "extractor is not finished"
+
+	# Action based on file imported
+	case "$file" in
+		*.tar.xz)
+			if command -v tar >/dev/null; then
+				tar -Jxpf "$file" -C "$targetdir" || die 1 "Unable to extract archive '$file' to '$targetdir' using tar"
+			fi
+		;;
+		*) die 255 "Unexpected file parsed in extractor"
+	esac
+}
+
+# Wrapper used to download file in location based on resources available on the system
 downloader() {
 	downloaderUrl="$1"
 	downloaderTarget="$2"
