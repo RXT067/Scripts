@@ -4,6 +4,9 @@
 
 # Kreypi (Krey's API) for shell
 
+
+# FIXME: Prepared for deprecation
+
 # Wrapper for git
 egit() {
 	argument="$1"
